@@ -18,7 +18,7 @@ public final class WatchSettingsModel {
     }
 
     private let defaults: UserDefaults
-    private let key = "watchSettings"
+    private let key = "watchSettings" // UserDefaults key name, not a secret. mobsf-ignore: ios_hardcoded_secret
     private let onChange: @MainActor (WatchSettings) -> Void
 
     public init(defaults: UserDefaults = .standard, onChange: @escaping @MainActor (WatchSettings) -> Void = { _ in }) {
