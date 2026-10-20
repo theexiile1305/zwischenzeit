@@ -51,7 +51,7 @@ python3 scripts/gen_swift_tokens.py design/tokens.json \
 python3 scripts/make_app_icon.py
 ```
 
-Linting: `swiftlint lint --strict` (config `.swiftlint.yml`; `print()` is banned, use OSLog), `ruff check scripts`, `shellcheck scripts/*.sh scripts/ci/*.sh`. CI (`.github/workflows/`) also runs tests with coverage and sanitizers, app builds, XcodeGen/token drift checks, CodeQL, Semgrep, mobsfscan, gitleaks, zizmor and Scorecard. Actions are pinned by SHA; downloaded tools are pinned by version and SHA-256.
+Linting: `swiftlint lint --strict` (config `.swiftlint.yml`; `print()` is banned, use OSLog), `ruff check scripts`, `shellcheck scripts/*.sh scripts/ci/*.sh`. CI (`.github/workflows/`) also runs tests with coverage and sanitizers, app builds, XcodeGen/token drift checks, CodeQL, Semgrep, mobsfscan, gitleaks, zizmor and Scorecard. Actions are pinned by SHA; downloaded tools are pinned by version and SHA-256. mobsfscan needs `semgrep` on PATH (else every check reports "missing"); accepted risks are listed in `.mobsf`, false positives get an inline `// mobsf-ignore: <rule>` with a reason.
 
 Releases: bump `MARKETING_VERSION` in project.yml and `CHANGELOG.md`, merge, then push a signed tag `vX.Y.Z`; `.github/workflows/release.yml` checks both and publishes the GitHub Release (see `docs/RELEASING.md`). Info.plist versions come from `MARKETING_VERSION`/`CURRENT_PROJECT_VERSION`.
 

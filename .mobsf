@@ -1,0 +1,8 @@
+# mobsfscan settings. Ignored rules are accepted risks, explained in docs/THREAT_MODEL.md.
+---
+- ignore-rules:
+    # No certificate pinning: the backend's Let's Encrypt chain rotates and is not ours to control.
+    - ios_cert_pinning
+    # No jailbreak / reverse-engineering detection: trivially bypassed on a compromised device.
+    - ios_jailbreak_detect
+    - ios_detect_reversing

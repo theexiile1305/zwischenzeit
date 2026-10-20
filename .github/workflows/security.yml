@@ -79,8 +79,14 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      # mobsfscan runs semgrep from PATH for the Swift rules; without it every check reports "missing".
       - name: mobsfscan
-        run: pipx run "mobsfscan==${MOBSFSCAN_VERSION}" --sarif --output mobsfscan.sarif App Packages/ZwischenzeitKit/Sources
+        run: |
+          python3 -m venv "$RUNNER_TEMP/mobsf"
+          "$RUNNER_TEMP/mobsf/bin/pip" install --quiet "mobsfscan==${MOBSFSCAN_VERSION}"
+          export PATH="$RUNNER_TEMP/mobsf/bin:$PATH"
+          semgrep --version
+          mobsfscan --config .mobsf --sarif --output mobsfscan.sarif App Packages/ZwischenzeitKit/Sources
       - uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
         if: always() && hashFiles('mobsfscan.sarif') != ''
         with:
