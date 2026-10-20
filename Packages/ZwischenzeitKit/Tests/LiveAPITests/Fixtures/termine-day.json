@@ -1,0 +1,39 @@
+{
+  "termine": [
+    {"id": "t101", "trash": false, "datum": "2026-10-14 00:00", "uhrzeit": "1970-01-01 08:40",
+     "kunde": {"id": "k55", "vorname": "Anna", "name": "Bergmann", "trash": false},
+     "rezept": {"id": "r900", "belegNummer": "1000-1", "therapieBericht": false, "neu": false, "therapieBerichtGeschrieben": false, "unterschriftErforderlich": false, "trash": false},
+     "terminSerieIndex": 0, "terminSerieCount": 0,
+     "leistungen": [
+       {"id": "l1", "dauer": 20, "rezeptIndex": 2, "rezeptCount": 6, "trash": false,
+        "mitarbeiter": {"id": "m7", "vorname": "Lena", "name": "Hartmann", "trash": false},
+        "raum": {"id": "raum1", "name": "Raum 1", "farbe": {"base": "#336699", "light": "#a0c0e0"}, "trash": false},
+        "terminart": {"id": "ta12", "name": "Krankengymnastik", "leistungsArt": "STANDARD", "farbe": {"base": "#2e7d32", "light": "#a5d6a7"}, "trash": false}},
+       {"id": "l2", "dauer": 10, "rezeptIndex": 2, "rezeptCount": 6, "trash": false,
+        "mitarbeiter": {"id": "m7", "trash": false},
+        "raum": {"trash": false},
+        "terminart": {"id": "ta20", "name": "Wärmetherapie", "leistungsArt": "PASSIV", "trash": false}}
+     ],
+     "dokumentation": {"text": "", "trash": false}},
+    {"id": "t102", "trash": false, "datum": "2026-10-14 00:00", "uhrzeit": "2026-10-14 09:00",
+     "kunde": {"id": "k56", "vorname": "Ben", "name": "Krause", "trash": false},
+     "abgesagtAm": "2026-10-13 17:02", "terminSerieIndex": 3, "terminSerieCount": 10,
+     "dauerTermin": {"id": "d8", "wochentage": {}, "kunden": [], "rezepte": {}, "vertraege": {}, "termine": [], "gruppenTermine": [], "springerTermine": [], "trash": false},
+     "leistungen": [{"id": "l3", "dauer": 30, "rezeptIndex": 0, "rezeptCount": 0, "mitarbeiter": {"id": "m7"}, "terminart": {"id": "ta13", "name": "Manuelle Lymphdrainage 45", "leistungsArt": "STANDARD"}}]},
+    {"id": "t103", "trash": false, "datum": "2026-10-14 00:00", "uhrzeit": "2026-10-14 12:00",
+     "leistungen": [{"id": "l4", "dauer": 30, "mitarbeiter": {"id": "m7"}}],
+     "dokumentation": {"text": "Teambesprechung", "trash": false}},
+    {"id": "t104", "trash": false, "datum": "2026-10-14 00:00", "uhrzeit": "2026-10-14 10:00", "wahrgenommen": true,
+     "kunde": {"id": "k57", "vorname": "Cem", "name": "Demir"},
+     "leistungen": [{"id": "l5", "dauer": 30, "mitarbeiter": {"id": "m9"}, "terminart": {"id": "ta12", "name": "Krankengymnastik"}}]},
+    {"id": "t105", "trash": false, "datum": "2026-10-14 00:00", "uhrzeit": "2026-10-14 11:00", "wahrgenommen": false,
+     "kunde": {"id": "k58", "vorname": "Dana", "name": "Engel"},
+     "leistungen": [{"id": "l6", "dauer": 20, "mitarbeiter": {"id": "m7"}}]},
+    {"id": "t106", "trash": true}
+  ],
+  "mitarbeiterTermine": [
+    {"id": "w1", "datum": "2026-10-14 00:00", "von": "2026-10-14 08:00", "bis": "2026-10-14 12:00", "mitarbeiter": {"id": "m7", "trash": false}, "ueberstunde": false, "trash": false},
+    {"id": "w2", "datum": "2026-10-14 00:00", "von": "1970-01-01 13:00", "bis": "1970-01-01 17:30", "mitarbeiter": {"id": "m7"}, "farbe": {"base": "#888888", "light": "#cccccc"}, "ueberstunde": false},
+    {"id": "w3", "datum": "2026-10-14 00:00", "von": "2026-10-14 07:00", "bis": "2026-10-14 15:00", "mitarbeiter": {"id": "m9"}}
+  ]
+}

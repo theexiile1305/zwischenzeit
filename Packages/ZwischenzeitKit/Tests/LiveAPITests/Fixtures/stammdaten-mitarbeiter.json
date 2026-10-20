@@ -1,0 +1,5 @@
+[
+  {"id": "m7", "vorname": "Lena", "name": "Hartmann", "kuerzel": "LH", "status": "AKTIV", "localId": 7, "trash": false},
+  {"id": "m9", "vorname": "Tom", "name": "Abel", "status": "AKTIV"},
+  {"id": "m3", "vorname": "Old", "name": "Timer", "status": "INAKTIV"}
+]

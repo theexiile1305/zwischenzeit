@@ -1,0 +1,6 @@
+# Tests may force-unwrap fixtures and override URLProtocol class methods.
+disabled_rules:
+  - force_try
+  - force_cast
+  - static_over_final_class
+  - optional_data_string_conversion

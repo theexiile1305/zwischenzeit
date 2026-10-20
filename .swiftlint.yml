@@ -1,0 +1,61 @@
+# SwiftLint configuration. CI runs `swiftlint lint --strict`.
+# Tuned to the existing style: short local names (`a`, `s`, `e`) and dense lines are intentional.
+
+included:
+  - App
+  - Packages/ZwischenzeitKit/Sources
+  - Packages/ZwischenzeitKit/Tests
+excluded:
+  - Packages/ZwischenzeitKit/Sources/DesignSystem/DesignTokens.swift  # generated
+  - Packages/ZwischenzeitKit/.build
+  - build
+
+disabled_rules:
+  - identifier_name
+  - type_name
+  - trailing_comma
+  - todo
+  - large_tuple
+  - nesting
+  - statement_position        # `}\n else if` chains are used for aligned decoding fallbacks
+  - function_parameter_count  # memberwise-style initializers of domain models
+
+opt_in_rules:
+  - empty_count
+  - first_where
+  - contains_over_first_not_nil
+  - fatal_error_message
+  - legacy_random
+  - unowned_variable_capture
+  - weak_delegate
+
+line_length:
+  warning: 320
+  error: 400
+  ignores_comments: true
+  ignores_urls: true
+
+file_length:
+  warning: 600
+  error: 1000
+
+type_body_length:
+  warning: 400
+  error: 600
+
+function_body_length:
+  warning: 100
+  error: 150
+
+cyclomatic_complexity:
+  warning: 15
+  error: 25
+
+# Logs must never contain patient data or tokens; print() bypasses OSLog privacy.
+custom_rules:
+  no_print:
+    name: "No print"
+    regex: "^\\s*(print|debugPrint|dump)\\("
+    message: "Use OSLog (counts and paths only), never print()."
+    severity: error
+    excluded: "Packages/ZwischenzeitKit/Sources/DesignGallery/.*"

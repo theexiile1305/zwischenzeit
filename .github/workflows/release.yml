@@ -1,0 +1,66 @@
+name: Release
+
+# Push a signed tag vX.Y.Z on a green main to publish a GitHub Release.
+# The tag must match MARKETING_VERSION in project.yml and have a CHANGELOG.md section.
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Publish release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write        # create the release
+      id-token: write        # sign the provenance attestation
+      attestations: write    # store it
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Check version and extract release notes
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          VERSION="${TAG#v}"
+          PROJECT_VERSION=$(sed -nE 's/^ *MARKETING_VERSION: "?([^"]+)"?$/\1/p' project.yml)
+          if [[ "$VERSION" != "$PROJECT_VERSION" ]]; then
+            echo "::error::Tag $TAG does not match MARKETING_VERSION $PROJECT_VERSION in project.yml."
+            exit 1
+          fi
+          awk -v v="$VERSION" '
+            $0 ~ "^## \\[" v "\\]" { found = 1; next }
+            found && /^## \[/ { exit }
+            found && /^\[[^]]+\]: / { exit }
+            found { print }
+          ' CHANGELOG.md > notes.md
+          if ! grep -q '[^[:space:]]' notes.md; then
+            echo "::error::CHANGELOG.md has no section for $VERSION."
+            exit 1
+          fi
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Source archive and checksums
+        run: |
+          git archive --format=tar.gz --prefix="zwischenzeit-${VERSION}/" -o "zwischenzeit-${VERSION}-source.tar.gz" HEAD
+          sha256sum "zwischenzeit-${VERSION}-source.tar.gz" > SHA256SUMS.txt
+
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: zwischenzeit-*-source.tar.gz
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release create "$TAG" --verify-tag --title "Zwischenzeit $VERSION" --notes-file notes.md \
+            "zwischenzeit-${VERSION}-source.tar.gz" SHA256SUMS.txt

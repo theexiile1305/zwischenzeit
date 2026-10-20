@@ -1,0 +1,146 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  SWIFTLINT_VERSION: 0.65.1
+  SWIFTLINT_SHA256: caeed6f4a679c35539ffaf124f6c4ab4a8416917f7d8796279dc52b74026059d
+  ACTIONLINT_VERSION: 1.7.12
+  ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
+  XCODEGEN_VERSION: 2.46.0
+  XCODEGEN_SHA256: 4d9e34b62172d645eed6457cac13fc222569974098ef4ee9c3368bedf0196806
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: SwiftLint
+        run: |
+          curl -fsSL -o swiftlint.zip "https://github.com/realm/SwiftLint/releases/download/${SWIFTLINT_VERSION}/swiftlint_linux_amd64.zip"
+          echo "${SWIFTLINT_SHA256}  swiftlint.zip" | sha256sum --check --strict
+          unzip -q swiftlint.zip -d "$RUNNER_TEMP/swiftlint"
+          "$RUNNER_TEMP/swiftlint/swiftlint" lint --strict --reporter github-actions-logging
+
+      - name: ShellCheck
+        run: shellcheck scripts/*.sh scripts/ci/*.sh
+
+      - name: Ruff
+        uses: astral-sh/ruff-action@278981a28ce3188b1e39527901f38254bf3aac89 # v4.1.0
+        with:
+          version: 0.17.1
+          src: scripts
+
+      - name: actionlint
+        run: |
+          curl -fsSL -o actionlint.tar.gz "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          echo "${ACTIONLINT_SHA256}  actionlint.tar.gz" | sha256sum --check --strict
+          tar -xzf actionlint.tar.gz -C "$RUNNER_TEMP" actionlint
+          "$RUNNER_TEMP/actionlint" -color
+
+  test:
+    name: Unit tests
+    runs-on: macos-26
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Select latest Xcode
+        run: scripts/ci/select-xcode.sh
+      - name: swift test
+        run: swift test --package-path Packages/ZwischenzeitKit --enable-code-coverage --parallel
+      - name: Coverage summary
+        run: |
+          COV=$(swift test --package-path Packages/ZwischenzeitKit --show-codecov-path)
+          cp "$COV" coverage.json
+          python3 -I -c 'import json,sys; t=json.load(open("coverage.json"))["data"][0]["totals"]; print("### Coverage\n\n| metric | % |\n| --- | --- |"); [print(f"| {k} | {t[k][\"percent\"]:.1f} |") for k in ("lines","functions","regions")]' >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: coverage
+          path: coverage.json
+          retention-days: 14
+
+  sanitizers:
+    name: Sanitizers (${{ matrix.sanitizer }})
+    runs-on: macos-26
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        sanitizer: [thread, address]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Select latest Xcode
+        run: scripts/ci/select-xcode.sh
+      - name: swift test --sanitize=${{ matrix.sanitizer }}
+        run: swift test --package-path Packages/ZwischenzeitKit --sanitize="${SANITIZER}"
+        env:
+          SANITIZER: ${{ matrix.sanitizer }}
+
+  build:
+    name: Build apps
+    runs-on: macos-26
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Select latest Xcode
+        run: scripts/ci/select-xcode.sh
+
+      - name: Xcode project matches project.yml
+        run: |
+          curl -fsSL -o xcodegen.zip "https://github.com/yonaskolb/XcodeGen/releases/download/${XCODEGEN_VERSION}/xcodegen.zip"
+          echo "${XCODEGEN_SHA256}  xcodegen.zip" | shasum -a 256 --check --strict
+          unzip -q xcodegen.zip -d "$RUNNER_TEMP"
+          "$RUNNER_TEMP/xcodegen/bin/xcodegen" generate --quiet
+          git diff --exit-code -- Zwischenzeit.xcodeproj App || { echo "::error::Run 'xcodegen generate' and commit the result."; exit 1; }
+
+      - name: DesignTokens.swift matches tokens.json
+        run: |
+          python3 -I scripts/gen_swift_tokens.py design/tokens.json Packages/ZwischenzeitKit/Sources/DesignSystem/DesignTokens.swift
+          git diff --exit-code -- Packages/ZwischenzeitKit/Sources/DesignSystem/DesignTokens.swift || { echo "::error::Regenerate DesignTokens.swift and commit it."; exit 1; }
+
+      - name: iOS app
+        run: >-
+          xcodebuild build -project Zwischenzeit.xcodeproj -scheme Zwischenzeit
+          -destination 'generic/platform=iOS Simulator' -derivedDataPath build/dd
+          CODE_SIGNING_ALLOWED=NO -quiet
+
+      - name: watchOS app
+        run: >-
+          xcodebuild build -project Zwischenzeit.xcodeproj -scheme ZwischenzeitWatch
+          -destination 'generic/platform=watchOS Simulator' -derivedDataPath build/dd
+          CODE_SIGNING_ALLOWED=NO -quiet
+
+      - name: SettingsFeature builds for watchOS
+        working-directory: Packages/ZwischenzeitKit
+        run: >-
+          xcodebuild build -scheme SettingsFeature
+          -destination 'generic/platform=watchOS Simulator' -derivedDataPath ../../build/dd-pkg -quiet

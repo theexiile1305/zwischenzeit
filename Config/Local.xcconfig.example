@@ -1,0 +1,12 @@
+// Copy to Config/Local.xcconfig (git-ignored) and fill in your own values.
+// No need to rerun xcodegen: Xcode reads this file at build time.
+
+// Reverse-DNS prefix you own, e.g. com.yourname. The app becomes $(BUNDLE_ID_PREFIX).zwischenzeit.
+BUNDLE_ID_PREFIX = com.yourname
+
+// Your Apple Developer team ID (Xcode → Settings → Accounts, or developer.apple.com → Membership).
+DEVELOPMENT_TEAM = ABCDE12345
+
+// Optional: keep an existing install (and its Keychain login and watch data) when its IDs differ.
+// APP_BUNDLE_ID = com.yourname.MyOldAppID
+// APP_GROUP_ID = group.com.yourname.myoldgroup

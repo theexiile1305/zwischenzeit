@@ -1,0 +1,6 @@
+# Default reviewers for everything in the repository.
+* @theexiile1305
+
+# Security-sensitive areas
+/Packages/ZwischenzeitKit/Sources/LiveAPI/ @theexiile1305
+/.github/ @theexiile1305

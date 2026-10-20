@@ -1,0 +1,10 @@
+{
+  "kunde": {"id": "k55", "vorname": "Anna", "name": "Bergmann"},
+  "vertragsDaten": [],
+  "rezepte": [
+    {"id": "r800", "localId": 1, "belegNummer": "0999-4", "kennzeichenVerordnungsart": "01", "rezeptStatus": 4,
+     "heilmittelLeistung": [{"anzahl": 6, "terminart": {"name": "Krankengymnastik"}}], "trash": false},
+    {"id": "r900", "localId": 2, "belegNummer": "1000-1", "kennzeichenVerordnungsart": "02", "rezeptStatus": 0,
+     "heilmittelLeistung": [{"anzahl": 6}, {"anzahl": 6}], "trash": false}
+  ]
+}

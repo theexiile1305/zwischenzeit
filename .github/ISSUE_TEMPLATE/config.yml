@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/theexiile1305/zwischenzeit/security/advisories/new
+    about: Please report vulnerabilities privately, never in a public issue.
+  - name: Questions and discussions
+    url: https://github.com/theexiile1305/zwischenzeit/discussions
+    about: Ask questions and share ideas with the community.
+  - name: Problems with TTools itself
+    url: https://www.ttools.app
+    about: This project is not affiliated with TTools. Contact TTools support for account or backend issues.

@@ -1,0 +1,8 @@
+# Ruff settings for the helper scripts in scripts/.
+line-length = 130
+target-version = "py39"
+
+[lint]
+# pycodestyle, pyflakes, bugbear, bandit (security), shebangs
+select = ["E", "F", "W", "B", "S", "EXE"]
+ignore = ["E741"]  # short names like `l`, `d` for light/dark are clear in context

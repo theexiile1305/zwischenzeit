@@ -1,0 +1,6 @@
+{"columns": [{"name": "name"}], "data": [
+  {"id": "ta12", "name": "Krankengymnastik", "kurzName": "KG", "takt": 20, "leistungsArt": "STANDARD", "ktl.code": null},
+  {"id": "ta13", "name": "Manuelle Lymphdrainage 45", "kurzName": "MLD45", "takt": 45, "leistungsArt": "STANDARD"},
+  {"id": "ta14", "name": "KG am Gerät", "kurzName": "KGG", "takt": 60, "leistungsArt": "STANDARD"},
+  {"id": "ta20", "name": "Wärmetherapie", "kurzName": "WT", "takt": 10, "leistungsArt": "PASSIV"}
+]}

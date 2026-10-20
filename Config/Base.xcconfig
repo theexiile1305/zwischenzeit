@@ -1,0 +1,14 @@
+// Shared build settings for all targets. project.yml applies this file at project level.
+//
+// Committed defaults build for the simulator without an Apple Developer account.
+// For device builds, copy Local.xcconfig.example to Local.xcconfig (git-ignored)
+// and set your own team and bundle ID prefix there.
+
+BUNDLE_ID_PREFIX = com.example
+DEVELOPMENT_TEAM =
+// The iOS app's bundle ID; the watch app and widget append .watchkitapp(.widgets).
+APP_BUNDLE_ID = $(BUNDLE_ID_PREFIX).zwischenzeit
+// Shared by the watch app and its widget.
+APP_GROUP_ID = group.$(BUNDLE_ID_PREFIX).zwischenzeit
+
+#include? "Local.xcconfig"

@@ -1,0 +1,29 @@
+# macOS
+.DS_Store
+
+# SwiftPM / Xcode
+.build/
+.swiftpm/
+DerivedData/
+build/
+*.xcodeproj/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcuserdata/
+xcuserdata/
+*.xcresult
+
+# Personal signing settings (see Config/Local.xcconfig.example)
+Config/Local.xcconfig
+
+# Build artifacts
+*.ipa
+*.dSYM
+*.dSYM.zip
+
+# Secrets and local tooling
+.env
+.env.*
+*.p12
+*.mobileprovision
+*.sarif
+coverage/
+__pycache__/
