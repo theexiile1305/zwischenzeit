@@ -5,8 +5,9 @@ struct LoginView: View {
     let model: AppModel
     // Einrichtung and Benutzer are remembered like in the web app; the password never is.
     @AppStorage("login.practice") private var practice = ""
-    @AppStorage("login.username") private var username = ""
-    @State private var password = ""
+    // Empty initial values, not secrets (mobsfscan's hardcoded-secret rule matches on the names).
+    @AppStorage("login.username") private var username = "" // mobsf-ignore: ios_hardcoded_secret
+    @State private var password = "" // mobsf-ignore: ios_hardcoded_secret
     @State private var code = ""
     @State private var isSigningIn = false
     @FocusState private var focus: Field?
@@ -32,14 +33,14 @@ struct LoginView: View {
             TextField("Einrichtung", text: $practice)
                 .textContentType(.organizationName)
                 .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
+                .autocorrectionDisabled(true)
                 .focused($focus, equals: .practice)
                 .submitLabel(.next)
                 .onSubmit { focus = .username }
             TextField("Benutzer", text: $username)
                 .textContentType(.username)
                 .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
+                .autocorrectionDisabled(true)
                 .focused($focus, equals: .username)
                 .submitLabel(.next)
                 .onSubmit { focus = .password }
@@ -63,6 +64,7 @@ struct LoginView: View {
         Section {
             TextField("Code", text: $code)
                 .textContentType(.oneTimeCode)
+                .autocorrectionDisabled(true)
                 .keyboardType(.numberPad)
                 .focused($focus, equals: .code)
                 .onChange(of: code) { _, new in
