@@ -73,7 +73,13 @@ jobs:
         run: |
           COV=$(swift test --package-path Packages/ZwischenzeitKit --show-codecov-path)
           cp "$COV" coverage.json
-          python3 -I -c 'import json,sys; t=json.load(open("coverage.json"))["data"][0]["totals"]; print("### Coverage\n\n| metric | % |\n| --- | --- |"); [print(f"| {k} | {t[k][\"percent\"]:.1f} |") for k in ("lines","functions","regions")]' >> "$GITHUB_STEP_SUMMARY"
+          python3 -I - >> "$GITHUB_STEP_SUMMARY" <<'PY'
+          import json
+          totals = json.load(open("coverage.json"))["data"][0]["totals"]
+          print("### Coverage\n\n| metric | % |\n| --- | --- |")
+          for key in ("lines", "functions", "regions"):
+              print("| %s | %.1f |" % (key, totals[key]["percent"]))
+          PY
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: coverage
