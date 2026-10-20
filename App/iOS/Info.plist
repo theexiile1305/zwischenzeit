@@ -24,6 +24,8 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Die App wird mit Face ID entsperrt, damit Termine nicht für andere sichtbar sind.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
