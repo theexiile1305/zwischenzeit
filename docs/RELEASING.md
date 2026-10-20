@@ -29,7 +29,20 @@ sha256sum -c SHA256SUMS.txt
 gh attestation verify zwischenzeit-X.Y.Z-source.tar.gz --repo theexiile1305/zwischenzeit
 ```
 
-## App Store / TestFlight
+## TestFlight
+
+Uploads run from a maintainer's Mac, not from CI (no signing keys in GitHub).
+
+1. One-time: create the app in App Store Connect with bundle ID `$(BUNDLE_ID_PREFIX).zwischenzeit`,
+   fill `Config/Local.xcconfig` (see the example) and sign in to your team in Xcode → Settings → Accounts.
+2. `scripts/testflight.sh` archives the app with the embedded watch app, uses a UTC timestamp as
+   build number, and uploads it (`Config/ExportOptions.plist`).
+3. After processing, add the build to a TestFlight group in App Store Connect.
+
+`ITSAppUsesNonExemptEncryption` is `false` (only the system's HTTPS), so no export-compliance
+question appears per build.
+
+## App Store
 
 Not automated. Signing identities never go into this repository or its secrets without a
 review of the threat model. A public App Store release needs the TTools vendor's permission

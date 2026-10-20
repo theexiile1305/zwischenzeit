@@ -53,6 +53,8 @@ targets:
         UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
         UIBackgroundModes: [fetch]
         BGTaskSchedulerPermittedIdentifiers: ["$(PRODUCT_BUNDLE_IDENTIFIER).watchsync"]
+        # Only the system's HTTPS/TLS is used: exempt, so App Store Connect skips the export-compliance question.
+        ITSAppUsesNonExemptEncryption: false
         NSFaceIDUsageDescription: Die App wird mit Face ID entsperrt, damit Termine nicht für andere sichtbar sind.
     settings:
       base:
