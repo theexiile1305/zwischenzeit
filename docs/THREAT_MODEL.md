@@ -46,7 +46,7 @@ The watch never talks to the backend and holds no credentials.
 | No certificate pinning | The backend uses Let's Encrypt with 90-day certificates and rotating intermediates. Pinning would break the app whenever the vendor changes its CA, and we don't control the backend. System trust plus ATS is the baseline. |
 | No jailbreak / tamper detection | Trivially bypassed on a compromised device and adds false positives; a compromised OS can read app memory anyway. |
 | Tokens readable after first unlock | Background watch sync runs while the phone is locked, so `AfterFirstUnlock` is required. Still device-bound and excluded from backups. |
-| The watch complication may be empty while the watch is locked | The payload file uses complete file protection; privacy wins over glanceability. |
+| The watch complication shows a lock icon, not appointment data, while the watch is locked | The payload file uses complete file protection; privacy wins over glanceability. The widget's reload policy retries soon after, so it resolves quickly once unlocked. |
 | Device without a passcode | The app cannot lock without one; it warns in Settings instead of refusing to work. |
 | Remembered Einrichtung and Benutzer | Not secret on their own and save typing at every sign-in; the password is never stored. |
 | Backend-side security (authorization, rate limits, data retention) | Out of our control; report issues to the TTools vendor. |

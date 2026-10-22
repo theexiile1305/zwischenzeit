@@ -8,7 +8,7 @@ import WidgetKit
 struct NextAppointmentEntry: TimelineEntry {
     let date: Date
     let next: UpcomingItem?
-    let isEnabled: Bool
+    let state: WatchDisplayState
     let relevance: TimelineEntryRelevance?
 }
 
@@ -17,25 +17,35 @@ struct NextAppointmentProvider: TimelineProvider {
         let start = Date.now.addingTimeInterval(12 * 60)
         return NextAppointmentEntry(date: .now, next: UpcomingItem(id: "p", start: start, end: start.addingTimeInterval(1200),
                                                                     title: "A. B.", subtitle: "Krankengymnastik", style: .kg),
-                                    isEnabled: true, relevance: nil)
+                                    state: .enabled, relevance: nil)
     }
 
     func getSnapshot(in context: Context, completion: @escaping (NextAppointmentEntry) -> Void) {
-        completion(entries(now: .now).first ?? placeholder(in: context))
+        completion(entries(now: .now, loadResult: UpcomingStore.loadResult()).first ?? placeholder(in: context))
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<NextAppointmentEntry>) -> Void) {
-        completion(Timeline(entries: entries(now: .now), policy: .never)) // the watch app reloads on each sync
+        let loadResult = UpcomingStore.loadResult()
+        let now = Date.now
+        completion(Timeline(entries: entries(now: now, loadResult: loadResult),
+                            policy: .after(WidgetTimelinePlanner.nextReloadDate(for: loadResult, now: now))))
     }
 
-    private func entries(now: Date) -> [NextAppointmentEntry] {
-        guard let payload = UpcomingStore.load() else {
-            return [NextAppointmentEntry(date: now, next: nil, isEnabled: false, relevance: nil)]
-        }
-        return WidgetTimelinePlanner.entries(payload, now: now).map { e in
-            let soon = e.next.map { $0.start.timeIntervalSince(e.date) < Double(payload.settings.leadMinutes * 60 + 600) } ?? false
-            return NextAppointmentEntry(date: e.date, next: e.next, isEnabled: payload.settings.isEnabled,
-                                        relevance: TimelineEntryRelevance(score: soon ? 100 : 10))
+    private func entries(now: Date, loadResult: UpcomingLoadResult) -> [NextAppointmentEntry] {
+        switch loadResult {
+        case .missing, .corrupt:
+            return [NextAppointmentEntry(date: now, next: nil, state: .neverSynced, relevance: nil)]
+        case .unreadable:
+            return [NextAppointmentEntry(date: now, next: nil, state: .locked, relevance: nil)]
+        case .loaded(let payload):
+            guard payload.settings.isEnabled else {
+                return [NextAppointmentEntry(date: now, next: nil, state: .disabled, relevance: nil)]
+            }
+            return WidgetTimelinePlanner.entries(payload, now: now).map { e in
+                let soon = e.next.map { $0.start.timeIntervalSince(e.date) < Double(payload.settings.leadMinutes * 60 + 600) } ?? false
+                return NextAppointmentEntry(date: e.date, next: e.next, state: .enabled,
+                                            relevance: TimelineEntryRelevance(score: soon ? 100 : 10))
+            }
         }
     }
 }
@@ -46,12 +56,19 @@ struct NextAppointmentWidgetView: View {
 
     var body: some View {
         Group {
-            if !entry.isEnabled {
+            switch entry.state {
+            case .disabled:
                 Image(systemName: "applewatch.slash").accessibilityLabel("Termin-Anzeige ist aus")
-            } else if let item = entry.next {
-                content(item)
-            } else {
-                Label("Keine Termine", systemImage: "calendar").accessibilityLabel("Heute keine weiteren Termine")
+            case .neverSynced:
+                Image(systemName: "arrow.triangle.2.circlepath").accessibilityLabel("Noch kein Abgleich mit dem iPhone")
+            case .locked:
+                Image(systemName: "lock.fill").accessibilityLabel("Uhr entsperren, um Termine zu sehen")
+            case .enabled:
+                if let item = entry.next {
+                    content(item)
+                } else {
+                    Label("Keine Termine", systemImage: "calendar").accessibilityLabel("Heute keine weiteren Termine")
+                }
             }
         }
         .containerBackground(.fill.tertiary, for: .widget)

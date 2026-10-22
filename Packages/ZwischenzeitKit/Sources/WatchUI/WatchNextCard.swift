@@ -3,28 +3,58 @@ import Domain
 import SwiftUI
 import WatchSync
 
+/// What the card (or the widget) shows instead of the next appointment.
+public enum WatchDisplayState: Equatable, Sendable {
+    /// The user turned the feature off in the iPhone app.
+    case disabled
+    /// Enabled, but nothing has arrived from the iPhone yet (fresh install, or the first
+    /// sync is still pending).
+    case neverSynced
+    /// Enabled and previously synced, but the on-disk payload can't be read right now
+    /// (the watch is locked; the payload uses complete file protection).
+    case locked
+    case enabled
+}
+
 /// Top card of the watch home, also the live preview in the iPhone settings.
 public struct WatchNextCard: View {
     let item: UpcomingItem?
     let now: Date
     let isStale: Bool
     let generatedAt: Date?
-    let isEnabled: Bool
+    let state: WatchDisplayState
 
-    public init(item: UpcomingItem?, now: Date, isStale: Bool = false, generatedAt: Date? = nil, isEnabled: Bool = true) {
+    public init(item: UpcomingItem?, now: Date, isStale: Bool = false, generatedAt: Date? = nil, state: WatchDisplayState = .enabled) {
         self.item = item
         self.now = now
         self.isStale = isStale
         self.generatedAt = generatedAt
-        self.isEnabled = isEnabled
+        self.state = state
     }
 
     public var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.s4) {
-            if !isEnabled {
+            switch state {
+            case .disabled:
                 Label("Aus", systemImage: "applewatch.slash").font(.headline)
                 Text("In der iPhone-App unter Einstellungen aktivieren.").font(.footnote).foregroundStyle(.secondary)
-            } else if let item {
+            case .neverSynced:
+                Label("Noch kein Abgleich", systemImage: "arrow.triangle.2.circlepath").font(.headline)
+                Text("iPhone-App in der Nähe öffnen, um Termine zu laden.").font(.footnote).foregroundStyle(.secondary)
+            case .locked:
+                Label("Entsperren für Termine", systemImage: "lock.fill").font(.headline)
+                Text("Termine sind bei gesperrter Uhr nicht lesbar.").font(.footnote).foregroundStyle(.secondary)
+            case .enabled:
+                enabledContent
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibilityText)
+    }
+
+    @ViewBuilder private var enabledContent: some View {
+        Group {
+            if let item {
                 HStack(alignment: .firstTextBaseline) {
                     Text(item.start > now ? "Als Nächstes" : "Läuft")
                         .font(.caption2.weight(.semibold))
@@ -77,8 +107,6 @@ public struct WatchNextCard: View {
                 Text("Stand \(PracticeCalendar.time(generatedAt))").font(.caption2).foregroundStyle(.secondary)
             }
         }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(accessibilityText)
     }
 
     public static func countdown(to item: UpcomingItem, now: Date) -> String {
@@ -98,7 +126,12 @@ public struct WatchNextCard: View {
     }
 
     private var accessibilityText: String {
-        guard isEnabled else { return "Watch-Anzeige ist aus" }
+        switch state {
+        case .disabled: return "Watch-Anzeige ist aus"
+        case .neverSynced: return "Noch kein Abgleich mit dem iPhone"
+        case .locked: return "Uhr entsperren, um Termine zu sehen"
+        case .enabled: break
+        }
         guard let item else { return "Heute keine weiteren Termine" }
         var parts = [item.start > now ? "Nächster Termin \(Self.countdown(to: item, now: now))"
                                       : "Läuft gerade, \(Countdown.remaining(end: item.end, now: now))",
