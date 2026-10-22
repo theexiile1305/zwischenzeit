@@ -6,8 +6,12 @@ import LiveAPI
 import LocalAuthentication
 import MockAPI
 import Observation
+import OSLog
 import SettingsFeature
 import WatchSync
+
+/// Counts and error codes only - never patient names, free text or payload contents.
+private let appLog = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Zwischenzeit", category: "AppModel")
 
 /// App-wide state: session, reference data, calendar, watch sync, app lock.
 @MainActor @Observable
@@ -156,30 +160,55 @@ final class AppModel {
 
     func performWatchSync() async {
         let settings = watchSettings.settings
-        guard let owner, settings.isEnabled else {
+        guard settings.isEnabled else {
             watchBridge.send(.disabled(at: now()))
+            return
+        }
+        guard let owner else {
+            // No session (e.g. a background wake raced with or failed a session restore).
+            // Skip this sync rather than telling the watch the feature is off.
+            appLog.info("performWatchSync: no owner, skipping")
             return
         }
         let today = PracticeCalendar.startOfDay(now())
         let range = DateInterval(start: today, end: PracticeCalendar.calendar.date(byAdding: .day, value: 2, to: today)!)
-        guard let appointments = try? await api.appointments(for: owner.id, in: range) else { return }
-        watchBridge.send(UpcomingBuilder.build(appointments, reference: reference, settings: settings, now: now()))
+        do {
+            let appointments = try await api.appointments(for: owner.id, in: range)
+            watchBridge.send(UpcomingBuilder.build(appointments, reference: reference, settings: settings, now: now()))
+        } catch {
+            appLog.error("performWatchSync: appointments fetch failed \((error as NSError).domain, privacy: .public)/\((error as NSError).code, privacy: .public)")
+        }
     }
 
-    func registerBackgroundSync() {
-        BGTaskScheduler.shared.register(forTaskWithIdentifier: Self.backgroundTaskID, using: nil) { task in
-            Task { @MainActor in
-                self.scheduleBackgroundSync()
-                await self.performWatchSync()
-                task.setTaskCompleted(success: true)
+    /// `.backgroundTask(.appRefresh(id:))` handler (`ZwischenzeitApp.swift`): registers the
+    /// task identifier at the right point in app launch automatically, unlike calling
+    /// `BGTaskScheduler.register` from a view's `.task`.
+    func handleBackgroundRefresh() async {
+        scheduleBackgroundSync()
+        if session == nil {
+            // A pure background wake of a terminated app never ran start(); restore without
+            // the Face ID/passcode gating a foreground cold start uses - the threat model
+            // already accepts background watch sync running while the phone is locked.
+            do {
+                if let s = try await api.restoreSession() {
+                    try await enter(s)
+                }
+            } catch {
+                appLog.error("handleBackgroundRefresh: restore failed \((error as NSError).domain, privacy: .public)/\((error as NSError).code, privacy: .public)")
+                return
             }
         }
+        await performWatchSync()
     }
 
     func scheduleBackgroundSync() {
         let request = BGAppRefreshTaskRequest(identifier: Self.backgroundTaskID)
         request.earliestBeginDate = Date(timeIntervalSinceNow: 30 * 60)
-        try? BGTaskScheduler.shared.submit(request)
+        do {
+            try BGTaskScheduler.shared.submit(request)
+        } catch {
+            appLog.error("scheduleBackgroundSync: submit failed \((error as NSError).domain, privacy: .public)/\((error as NSError).code, privacy: .public)")
+        }
     }
 
     // MARK: App lock

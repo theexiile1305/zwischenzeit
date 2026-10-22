@@ -102,7 +102,7 @@ public struct SettingsView: View {
             }
 
             Section("Vorschau") {
-                WatchNextCard(item: previewItem, now: previewNow, isEnabled: model.settings.isEnabled)
+                WatchNextCard(item: previewItem, now: previewNow, state: model.settings.isEnabled ? .enabled : .disabled)
                     .padding(DS.Space.s12)
                     .frame(maxWidth: 220, alignment: .leading)
                     .background(RoundedRectangle(cornerRadius: DS.Radius.lg).fill(Color.black))
@@ -118,7 +118,8 @@ public struct SettingsView: View {
                 if let error = status.error {
                     Text(error).foregroundStyle(DS.Color.danger)
                 } else if !status.isPaired {
-                    Text("Keine Apple Watch mit diesem iPhone gekoppelt.").font(.footnote).foregroundStyle(DS.Color.textMuted)
+                    Text("Keine Apple Watch mit diesem iPhone gekoppelt. Die Apple Watch koppelt nur mit einem iPhone, nicht mit einem iPad.")
+                        .font(.footnote).foregroundStyle(DS.Color.textMuted)
                 } else if !status.isAppInstalled {
                     Text("Die Watch-App über die Watch-App auf dem iPhone installieren.").font(.footnote).foregroundStyle(DS.Color.textMuted)
                 }

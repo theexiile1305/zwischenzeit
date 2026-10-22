@@ -141,6 +141,63 @@ private func item(_ id: String, _ h: Int, _ m: Int, minutes: Int = 20, cancelled
         #expect(!p.isStale(at: at(8, 59)))
         #expect(p.isStale(at: at(9, 1)))
     }
+
+    @Test func unreadableRetriesSoonerThanMissingOrLoaded() {
+        let now = at(9, 0)
+        let unreadable = WidgetTimelinePlanner.nextReloadDate(for: .unreadable, now: now)
+        let missing = WidgetTimelinePlanner.nextReloadDate(for: .missing, now: now)
+        let corrupt = WidgetTimelinePlanner.nextReloadDate(for: .corrupt, now: now)
+        let loaded = WidgetTimelinePlanner.nextReloadDate(for: .loaded(UpcomingPayload(generatedAt: now, settings: WatchSettings(isEnabled: true), items: [])), now: now)
+        #expect(unreadable > now && unreadable < missing)
+        #expect(unreadable < loaded)
+        #expect(missing == corrupt)
+    }
+}
+
+@Suite struct UpcomingStoreTests {
+    private func tempURL() -> URL {
+        FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".json")
+    }
+
+    @Test func missingWhenNoFileExists() {
+        #expect(UpcomingStore.loadResult(at: tempURL()) == .missing)
+    }
+
+    @Test func unreadableWhenFileCannotBeRead() throws {
+        let url = tempURL()
+        FileManager.default.createFile(atPath: url.path, contents: Data("{}".utf8))
+        try FileManager.default.setAttributes([.posixPermissions: 0], ofItemAtPath: url.path)
+        defer {
+            try? FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: url.path)
+            try? FileManager.default.removeItem(at: url)
+        }
+        #expect(UpcomingStore.loadResult(at: url) == .unreadable)
+    }
+
+    @Test func corruptWhenJSONIsGarbage() throws {
+        let url = tempURL()
+        try Data("not json".utf8).write(to: url)
+        defer { try? FileManager.default.removeItem(at: url) }
+        #expect(UpcomingStore.loadResult(at: url) == .corrupt)
+    }
+
+    @Test func loadedWhenPayloadDecodes() throws {
+        let url = tempURL()
+        let payload = UpcomingPayload.disabled(at: Date(timeIntervalSince1970: 0))
+        try UpcomingStore.save(payload, at: url)
+        defer { try? FileManager.default.removeItem(at: url) }
+        #expect(UpcomingStore.loadResult(at: url) == .loaded(payload))
+    }
+
+    /// Disabling writes clear() then save(). If the re-save fails, the file must stay
+    /// absent (.missing) rather than leaving the previous, enabled payload on disk.
+    @Test func clearBeforeFailedSaveLeavesMissingNotStale() throws {
+        let url = tempURL()
+        let enabled = UpcomingPayload(generatedAt: Date(timeIntervalSince1970: 0), settings: WatchSettings(isEnabled: true), items: [])
+        try UpcomingStore.save(enabled, at: url)
+        UpcomingStore.clear(at: url)
+        #expect(UpcomingStore.loadResult(at: url) == .missing)
+    }
 }
 
 private extension UpcomingItem {

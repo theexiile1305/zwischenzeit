@@ -18,7 +18,6 @@ struct ZwischenzeitApp: App {
         WindowGroup {
             RootView(model: model)
                 .task {
-                    model.registerBackgroundSync()
                     await model.start()
                 }
                 .onChange(of: scenePhase) { _, phase in
@@ -34,6 +33,12 @@ struct ZwischenzeitApp: App {
                         LockCover(isLocked: model.isLocked && !capture.isCaptured) { Task { await model.unlock() } }
                     }
                 }
+        }
+        // Registers and runs the watch background sync. The scene modifier (rather than
+        // BGTaskScheduler.register from a view's .task) guarantees the system registers the
+        // handler at the right point in app launch.
+        .backgroundTask(.appRefresh(AppModel.backgroundTaskID)) {
+            await model.handleBackgroundRefresh()
         }
     }
 }

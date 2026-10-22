@@ -85,4 +85,18 @@ public enum WidgetTimelinePlanner {
         dates += payload.items.filter { !$0.isCancelled && $0.end > now }.map(\.end)
         return dates.sorted().map { Entry(date: $0, next: payload.next(at: $0)) }
     }
+
+    /// Bounded fallback reload time: the system calls `getTimeline` again this soon even if
+    /// nothing explicitly triggers a reload. `.unreadable` (the watch is locked) resolves on
+    /// unlock, so it's retried sooner than a genuinely stale/missing payload.
+    public static func nextReloadDate(for loadResult: UpcomingLoadResult, now: Date) -> Date {
+        switch loadResult {
+        case .unreadable:
+            return now.addingTimeInterval(5 * 60)
+        case .loaded:
+            return now.addingTimeInterval(UpcomingPayload.staleAfter)
+        case .missing, .corrupt:
+            return now.addingTimeInterval(4 * 3600)
+        }
+    }
 }
