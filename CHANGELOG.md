@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-10-22
+
+### Fixed
+
+- Apple Watch sync no longer fails silently: queued payloads are no longer dropped when the
+  watch isn't paired yet, the watch distinguishes "disabled", "never synced" and "locked" states,
+  the widget has a bounded reload fallback instead of `.never`, background-task registration
+  uses the version-correct scene modifier, the watch wakes on connectivity updates, and every
+  failure point now logs instead of swallowing the error.
+
+### Changed
+
+- Settings copy clarifies that Apple Watch only pairs with iPhone.
+
 ## [0.1.0] - 2026-10-20
 
 ### Added
@@ -26,5 +40,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Third-party keyboards disabled; Keychain cleared after a reinstall; debug launch arguments
   compiled into Debug builds only; privacy manifests for all targets.
 
-[Unreleased]: https://github.com/theexiile1305/zwischenzeit/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/theexiile1305/zwischenzeit/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/theexiile1305/zwischenzeit/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/theexiile1305/zwischenzeit/releases/tag/v0.1.0
