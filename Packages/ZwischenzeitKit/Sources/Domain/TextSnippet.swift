@@ -25,7 +25,7 @@ public struct TextSnippet: Identifiable, Hashable, Codable, Sendable {
     }
 
     public static let defaults: [TextSnippet] = [
-        TextSnippet(title: "MLD30", body: "MLD 30 durchgefühert"),
+        TextSnippet(title: "MLD30", body: "MLD 30 durchgeführt"),
         TextSnippet(title: "TRXP", body: "TRX Plank"),
         TextSnippet(title: "TRXS", body: "TRX Squats"),
         TextSnippet(title: "WTT", body: "WTT Schulter-/Nackenbereich"),
