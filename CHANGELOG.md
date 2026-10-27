@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-10-27
+
+### Fixed
+
+- Typo in the default Textbaustein "MLD 30 durchgeführt".
+
 ## [0.1.1] - 2026-10-22
 
 ### Fixed
@@ -40,6 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Third-party keyboards disabled; Keychain cleared after a reinstall; debug launch arguments
   compiled into Debug builds only; privacy manifests for all targets.
 
-[Unreleased]: https://github.com/theexiile1305/zwischenzeit/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/theexiile1305/zwischenzeit/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/theexiile1305/zwischenzeit/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/theexiile1305/zwischenzeit/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/theexiile1305/zwischenzeit/releases/tag/v0.1.0
