@@ -52,7 +52,7 @@ public struct SnippetManagerView: View {
                 SnippetEditView(snippet: snippet) { store.upsert($0) }
             }
         }
-        .confirmationDialog("Eigene Bausteine durch die Standardbausteine ersetzen?", isPresented: $confirmReset, titleVisibility: .visible) {
+        .confirmationDialog("Eigene Textbausteine durch die Standard-Textbausteine ersetzen?", isPresented: $confirmReset, titleVisibility: .visible) {
             Button("Wiederherstellen", role: .destructive) { store.resetToDefaults() }
         }
     }
@@ -79,7 +79,7 @@ private struct SnippetEditView: View {
             } header: {
                 Text("Text")
             } footer: {
-                Text("Bausteine werden nur auf diesem iPhone gespeichert. Bitte keine Patientennamen eintragen.")
+                Text("Textbausteine werden nur auf diesem Gerät gespeichert. Bitte keine Patientennamen eintragen.")
             }
             Section("Platzhalter") {
                 ForEach(TextSnippet.placeholders, id: \.token) { p in
@@ -100,7 +100,7 @@ private struct SnippetEditView: View {
         .toolbar {
             ToolbarItem(placement: .cancellationAction) { Button("Abbrechen") { dismiss() } }
             ToolbarItem(placement: .confirmationAction) {
-                Button("Sichern") { onSave(snippet); dismiss() }.disabled(!isValid)
+                Button("Speichern") { onSave(snippet); dismiss() }.disabled(!isValid)
             }
         }
     }

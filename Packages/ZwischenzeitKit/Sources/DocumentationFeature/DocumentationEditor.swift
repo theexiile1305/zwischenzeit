@@ -58,7 +58,7 @@ public struct DocumentationEditor: View {
                 Button("Verwerfen", role: .destructive) { dismiss() }
                 Button("Weiter schreiben", role: .cancel) {}
             } message: {
-                Text("Der Text ist noch nicht gesichert.")
+                Text("Der Text ist noch nicht gespeichert.")
             }
             .sheet(isPresented: $showManager) {
                 NavigationStack {
@@ -84,7 +84,7 @@ public struct DocumentationEditor: View {
             if model.phase == .saving {
                 ProgressView()
             } else {
-                Button("Sichern") {
+                Button("Speichern") {
                     Task { if await model.save() { dismiss() } }
                 }
                 .fontWeight(.semibold)
@@ -138,7 +138,7 @@ public struct DocumentationEditor: View {
                     .accessibilityHint("Fügt ein: \(body)")
                 }
                 Button { showManager = true } label: {
-                    Label("Bausteine", systemImage: "slider.horizontal.3")
+                    Label("Textbausteine", systemImage: "slider.horizontal.3")
                         .font(.subheadline.weight(.medium))
                         .padding(.horizontal, DS.Space.s12)
                         .padding(.vertical, DS.Space.s8)
