@@ -367,10 +367,11 @@ private struct PauseRow: View {
 private struct PastToggle: View {
     let count: Int
     @Binding var isExpanded: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         Button {
-            withAnimation(.snappy) { isExpanded.toggle() }
+            DS.Motion.perform(reduce: reduceMotion) { isExpanded.toggle() }
         } label: {
             HStack(spacing: DS.Space.s8) {
                 Image(systemName: "chevron.right")

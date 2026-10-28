@@ -6,6 +6,7 @@ import SwiftUI
 struct TimeGridView: View {
     @Bindable var model: CalendarModel
     let onOpen: (AppointmentID) -> Void
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// Set on appear and when the period changes; consumed once the data is in.
     @State private var pendingScroll = true
@@ -54,7 +55,7 @@ struct TimeGridView: View {
                 .overlay(alignment: .bottomTrailing) {
                     if nowIsOffscreen {
                         Button {
-                            withAnimation(.snappy) { proxy.scrollTo(anchorHour, anchor: .top) }
+                            DS.Motion.perform(reduce: reduceMotion) { proxy.scrollTo(anchorHour, anchor: .top) }
                         } label: {
                             Label("Jetzt", systemImage: "clock")
                                 .font(.subheadline.weight(.semibold))
@@ -69,7 +70,7 @@ struct TimeGridView: View {
                         .accessibilityHint("Springt zur aktuellen Uhrzeit")
                     }
                 }
-                .animation(.snappy, value: nowIsOffscreen)
+                .animation(DS.Motion.snappy(reduce: reduceMotion), value: nowIsOffscreen)
                 .onAppear { scrollToAnchor(proxy) }
                 .onChange(of: model.mode) { pendingScroll = true; scrollToAnchor(proxy) }
                 .onChange(of: model.anchor) { pendingScroll = true; scrollToAnchor(proxy) }
