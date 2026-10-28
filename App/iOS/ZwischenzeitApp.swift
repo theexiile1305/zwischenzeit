@@ -191,12 +191,14 @@ final class ScreenCaptureMonitor {
 struct LockCover: View {
     let isLocked: Bool
     let onUnlock: () -> Void
+    @ScaledMetric(relativeTo: .largeTitle) private var lockIconSize: CGFloat = 44
 
     var body: some View {
         ZStack {
             DS.Color.bg.ignoresSafeArea()
             VStack(spacing: DS.Space.s16) {
-                Image(systemName: "lock.fill").font(.system(size: 44)).foregroundStyle(DS.Color.textMuted)
+                Image(systemName: "lock.fill").font(.system(size: lockIconSize)).foregroundStyle(DS.Color.textMuted)
+                    .accessibilityHidden(true)
                 Text("Termine sind ausgeblendet").font(.headline).foregroundStyle(DS.Color.text)
                 if isLocked {
                     DSButton("Entsperren", action: onUnlock)

@@ -247,8 +247,11 @@ private struct AgendaRow: View {
     let isRunning: Bool
     let isNext: Bool
 
+    @ScaledMetric(relativeTo: .subheadline) private var timeColumn: CGFloat = 48
+
     private var isBlocker: Bool { appointment.kind == .blocker }
     private var isCancelled: Bool { appointment.status == .cancelled }
+    private var isDimmed: Bool { isPast || isCancelled }
 
     var body: some View {
         HStack(alignment: .top, spacing: DS.Space.s12) {
@@ -257,10 +260,11 @@ private struct AgendaRow: View {
                 Text(PracticeCalendar.time(appointment.end)).font(.caption).foregroundStyle(DS.Color.textMuted)
             }
             .monospacedDigit()
-            .frame(width: 48, alignment: .trailing)
+            .frame(width: timeColumn, alignment: .trailing)
 
             RoundedRectangle(cornerRadius: 2)
                 .fill(model.style(appointment).edge)
+                .opacity(isDimmed ? 0.5 : 1)
                 .frame(width: 4)
 
             VStack(alignment: .leading, spacing: DS.Space.s2) {
@@ -269,6 +273,7 @@ private struct AgendaRow: View {
                         .font(.body.weight(.semibold))
                         .lineLimit(1)
                         .strikethrough(isCancelled)
+                        .foregroundStyle(isDimmed ? DS.Color.textMuted : DS.Color.text)
                     if let badge = DSCheckInBadge.State(checkIn, isRunning: isRunning) { DSCheckInBadge(badge) }
                 }
                 Text(model.treatmentName(appointment))
@@ -294,8 +299,7 @@ private struct AgendaRow: View {
                 DS.Color.unavailable.opacity(0.5)
             }
         }
-        .overlay(alignment: .bottom) { Rectangle().fill(DS.Color.gridLine).frame(height: 0.5).padding(.leading, 76) }
-        .opacity(isPast || isCancelled ? 0.55 : 1)
+        .overlay(alignment: .bottom) { Rectangle().fill(DS.Color.gridLine).frame(height: 0.5).padding(.leading, timeColumn + 28) }
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
         .accessibilityHint("Öffnet Details")
@@ -309,13 +313,14 @@ private struct AgendaRow: View {
 private struct GapRow: View {
     let minutes: Int
     let start: Date
+    @ScaledMetric(relativeTo: .subheadline) private var timeColumn: CGFloat = 48
 
     var body: some View {
         HStack(spacing: DS.Space.s12) {
             Text(PracticeCalendar.time(start))
                 .font(.caption).monospacedDigit()
                 .foregroundStyle(DS.Color.textMuted)
-                .frame(width: 48, alignment: .trailing)
+                .frame(width: timeColumn, alignment: .trailing)
             Line().stroke(DS.Color.gridLineStrong, style: StrokeStyle(lineWidth: 1, dash: [3, 3])).frame(width: 4, height: 20)
             Text("\(Countdown.duration(minutes: minutes)) frei")
                 .font(.footnote.weight(.medium))
