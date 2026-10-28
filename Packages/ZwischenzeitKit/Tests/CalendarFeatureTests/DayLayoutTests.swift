@@ -13,6 +13,16 @@ private func appt(_ id: String, _ h: Int, _ m: Int, minutes: Int, day: Date = mo
 }
 
 @Suite struct DayLayoutTests {
+    @Test func openMinutesSubtractsBlockedTimeOnce() {
+        func blocked(_ h1: Int, _ m1: Int, _ h2: Int, _ m2: Int) -> BlockedInterval {
+            BlockedInterval(start: cal.date(on: monday, hour: h1, minute: m1), end: cal.date(on: monday, hour: h2, minute: m2))
+        }
+        // 07-20 is 780 min. Lunch 12:00-13:00 and an overlapping 12:30-13:30 absence cover 90 min, the evening 18:00-24:00 covers 120.
+        let open = DayLayout.openMinutes(
+            blocked: [blocked(12, 0, 13, 0), blocked(12, 30, 13, 30), blocked(18, 0, 23, 59)], on: monday, startHour: 7, endHour: 20)
+        #expect(open == 780 - 90 - 120)
+    }
+
     @Test func separateAppointmentsGetFullWidth() {
         let placed = DayLayout.place([appt("a", 8, 0, minutes: 20), appt("b", 8, 20, minutes: 20)], dayStartHour: 7)
         #expect(placed.map(\.columnCount) == [1, 1])

@@ -14,6 +14,10 @@ struct TimeGridView: View {
     @State private var pinchHeight: CGFloat?
     @State private var pinchBase: CGFloat?
 
+    /// Where the grid's content sits in the scroll view (<= 0 when scrolled down), and the viewport height.
+    @State private var contentOffset: CGFloat = 0
+    @State private var viewportHeight: CGFloat = 0
+
     private var minuteHeight: CGFloat { pinchHeight ?? model.minuteHeight }
 
     private var hours: [Int] { Array(model.dayStartHour...model.dayEndHour) }
@@ -38,7 +42,34 @@ struct TimeGridView: View {
                     .frame(height: CGFloat(gridMinutes) * minuteHeight)
                     .padding(.top, DS.Space.s8)
                     .padding(.bottom, DS.Space.s48)
+                    .background {
+                        GeometryReader { geo in
+                            Color.clear.preference(key: GridOffsetKey.self, value: geo.frame(in: .named("grid")).minY)
+                        }
+                    }
                 }
+                .coordinateSpace(name: "grid")
+                .onPreferenceChange(GridOffsetKey.self) { contentOffset = $0 }
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { viewportHeight = $0 }
+                .overlay(alignment: .bottomTrailing) {
+                    if nowIsOffscreen {
+                        Button {
+                            withAnimation(.snappy) { proxy.scrollTo(anchorHour, anchor: .top) }
+                        } label: {
+                            Label("Jetzt", systemImage: "clock")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(DS.Color.onDanger)
+                                .padding(.horizontal, DS.Space.s12)
+                                .frame(minHeight: 36)
+                                .background(Capsule().fill(DS.Color.nowLine))
+                                .shadow(radius: 2, y: 1)
+                        }
+                        .padding(DS.Space.s12)
+                        .transition(.scale.combined(with: .opacity))
+                        .accessibilityHint("Springt zur aktuellen Uhrzeit")
+                    }
+                }
+                .animation(.snappy, value: nowIsOffscreen)
                 .onAppear { scrollToAnchor(proxy) }
                 .onChange(of: model.mode) { pendingScroll = true; scrollToAnchor(proxy) }
                 .onChange(of: model.anchor) { pendingScroll = true; scrollToAnchor(proxy) }
@@ -122,6 +153,15 @@ struct TimeGridView: View {
         .accessibilityHidden(true)
     }
 
+    /// Today is shown, but the now line is scrolled out of view.
+    private var nowIsOffscreen: Bool {
+        guard model.days.contains(where: model.isToday), viewportHeight > 0 else { return false }
+        let minute = PracticeCalendar.minuteOfDay(model.currentDate) - model.dayStartHour * 60
+        guard minute >= 0, minute <= gridMinutes else { return false }
+        let y = DS.Space.s8 + CGFloat(minute) * minuteHeight + contentOffset
+        return y < 0 || y > viewportHeight - DS.Space.s48
+    }
+
     /// Today: an hour before now. Any other day: the first appointment, else the day's start.
     private var anchorHour: Int {
         let cal = PracticeCalendar.self
@@ -175,6 +215,8 @@ private struct DayColumn: View {
                     .clipped()
                     .offset(y: CGFloat(band.lowerBound) * mh)
                     .allowsHitTesting(false)
+                    .accessibilityElement()
+                    .accessibilityLabel("Nicht verfügbar, \(clock(band.lowerBound)) bis \(clock(band.upperBound))")
                 }
 
                 GridLines(hours: model.dayEndHour - model.dayStartHour, minuteHeight: mh)
@@ -218,7 +260,13 @@ private struct DayColumn: View {
             }
         }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("\(PracticeCalendar.format(day, "EEEEdMMMM")), \(appointments.count) Termine")
+        .accessibilityLabel("\(PracticeCalendar.format(day, "EEEEdMMMM")), \(appointments.filter { $0.kind == .treatment && $0.status != .cancelled }.count) Termine")
+    }
+
+    /// Grid minute -> "12:30".
+    private func clock(_ gridMinute: Int) -> String {
+        let total = model.dayStartHour * 60 + gridMinute
+        return String(format: "%02d:%02d", total / 60 % 24, total % 60)
     }
 
     private var freeGaps: [AgendaEntry] {
@@ -231,6 +279,11 @@ private struct DayColumn: View {
     private var bands: [ClosedRange<Int>] {
         model.blocked.compactMap { DayLayout.band($0, on: day, dayStartHour: model.dayStartHour, dayEndHour: model.dayEndHour) }
     }
+}
+
+private struct GridOffsetKey: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
 }
 
 private struct GridLines: View {

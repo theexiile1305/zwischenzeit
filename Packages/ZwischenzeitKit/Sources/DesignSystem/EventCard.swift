@@ -155,7 +155,7 @@ public struct EventCard: View {
         }
         .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xs))
         .opacity(model.isPast && model.status != .cancelled ? 0.6 : 1)
-        .dynamicTypeSize(...DynamicTypeSize.xxLarge)
+        .dynamicTypeSize(...DynamicTypeSize.accessibility1)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(model.accessibilityText)
         .accessibilityHint("Öffnet Details")
@@ -202,5 +202,7 @@ public struct MonthChip: View {
             .padding(.horizontal, DS.Space.s4)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(RoundedRectangle(cornerRadius: DS.Radius.xs).fill(style.fill))
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(isCancelled ? "\(time), \(treatment), abgesagt" : "\(time), \(treatment)")
     }
 }

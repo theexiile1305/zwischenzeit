@@ -63,6 +63,23 @@ public enum DayLayout {
         return out
     }
 
+    /// Minutes of `startHour...endHour` on `day` not covered by blocked intervals
+    /// (absences, lunch, outside the employee's working windows). Overlaps count once.
+    public static func openMinutes(blocked: [BlockedInterval], on day: Date, startHour: Int, endHour: Int) -> Int {
+        let bands = blocked
+            .compactMap { band($0, on: day, dayStartHour: startHour, dayEndHour: endHour) }
+            .map { ($0.lowerBound, $0.upperBound) }
+            .sorted { $0.0 < $1.0 }
+        var covered = 0
+        var end = Int.min
+        for (lo, hi) in bands {
+            let from = max(lo, end)
+            if hi > from { covered += hi - from }
+            end = max(end, hi)
+        }
+        return max((endHour - startHour) * 60 - covered, 0)
+    }
+
     /// Clamps a blocked interval to one day's grid, in grid minutes.
     public static func band(_ interval: BlockedInterval, on day: Date, dayStartHour: Int, dayEndHour: Int) -> ClosedRange<Int>? {
         let gridStart = PracticeCalendar.date(on: day, hour: dayStartHour, minute: 0)

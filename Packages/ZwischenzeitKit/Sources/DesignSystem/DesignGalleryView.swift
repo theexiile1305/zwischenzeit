@@ -15,6 +15,8 @@ public struct DesignGalleryView: View {
         .init(id: "7", time: "11:10", title: "Platzhalter, Tom", session: "1/3", treatment: "Massage", style: .other),
         .init(id: "8", time: "10:00", title: "Freie Zeit", treatment: "Teambesprechung", style: .blocker),
         .init(id: "9", time: "08:50", title: "Absage, Kim", session: "3/6", treatment: "Krankengymnastik", style: .kg, status: .cancelled),
+        .init(id: "10", time: "09:00", title: "Wartet, Nele", session: "2/6", treatment: "Krankengymnastik", style: .kg, status: .arrived, room: "Raum 1", checkIn: .waiting),
+        .init(id: "11", time: "09:20", title: "Verspätet, Ole", session: "1/6", treatment: "Krankengymnastik", style: .kg, room: "Raum 3", checkIn: .overdue),
     ]
 
     public var body: some View {
@@ -59,6 +61,8 @@ public struct DesignGalleryView: View {
                     EventCard(Self.cards[3], density: .compact).frame(width: 90, height: 24)
                     EventCard(Self.cards[0], density: .compact).frame(width: 160, height: 24)
                     EventCard(Self.cards[1], density: .compact).frame(width: 300, height: 24)
+                    EventCard(Self.cards[9], density: .compact).frame(width: 120, height: 24)
+                    EventCard(Self.cards[10], density: .compact).frame(width: 120, height: 24)
                 }
             }
             section("Month chips") {
@@ -67,6 +71,7 @@ public struct DesignGalleryView: View {
                     MonthChip(time: "08:00", treatment: "Krankengymnastik", style: .kg)
                     MonthChip(time: "11:00", treatment: "KG-Gerät", style: .device)
                     MonthChip(time: "14:40", treatment: "Wärmetherapie/Heißluft", style: .heat)
+                    MonthChip(time: "15:00", treatment: "Krankengymnastik", style: .kg, isCancelled: true).opacity(0.5)
                 }
                 .frame(width: 220)
             }

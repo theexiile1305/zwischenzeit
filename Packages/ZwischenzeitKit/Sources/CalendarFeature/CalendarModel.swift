@@ -24,14 +24,23 @@ public enum LoadState: Equatable, Sendable {
 @MainActor @Observable
 public final class CalendarModel {
     public var mode: CalendarMode = .week { didSet { if mode != oldValue { updateVisibleHours(); reloadIfNeeded() } } }
-    public private(set) var anchor: Date { didSet { updateVisibleHours() } }
+    public private(set) var anchor: Date {
+        didSet {
+            navigationDirection = anchor >= oldValue ? 1 : -1
+            updateVisibleHours()
+        }
+    }
     public var showWeekend = false { didSet { if showWeekend != oldValue { updateVisibleHours(); reload() } } }
     public var minuteHeight: CGFloat = DS.Layout.minuteHeightDefault
     /// Compact width (iPhone): the week view shows this many consecutive days instead of the whole week.
     public var weekDayLimit: Int? { didSet { if weekDayLimit != oldValue { updateVisibleHours(); reloadIfNeeded() } } }
     public var employeeID: EmployeeID { didSet { if employeeID != oldValue { reload() } } }
 
-    public private(set) var appointments: [Appointment] = [] { didSet { updateVisibleHours() } }
+    public private(set) var appointments: [Appointment] = [] { didSet { indexAppointments(); updateVisibleHours() } }
+    /// `appointments` split by practice-calendar day, so the grid and month do not filter the full list per cell.
+    private var appointmentsByDay: [Date: [Appointment]] = [:]
+    /// +1 when the last navigation went forward in time, -1 backward. Drives the page transition.
+    public private(set) var navigationDirection = 1
     public private(set) var blocked: [BlockedInterval] = []
     public private(set) var state: LoadState = .idle
     /// The range `appointments` and `blocked` currently hold.
@@ -51,6 +60,8 @@ public final class CalendarModel {
     public private(set) var dayEndHour = Int(DS.Layout.dayEndHour)
 
     private func updateVisibleHours() {
+        let newDays = computeDays()
+        if newDays != days { days = newDays }
         var lo = Int(DS.Layout.dayStartHour), hi = Int(DS.Layout.dayEndHour)
         if mode == .day || mode == .week {
             let cal = PracticeCalendar.self
@@ -71,12 +82,20 @@ public final class CalendarModel {
         self.reference = reference
         self.now = now
         self.anchor = PracticeCalendar.startOfDay(now())
+        updateVisibleHours()
+    }
+
+    private func indexAppointments() {
+        appointmentsByDay = Dictionary(grouping: appointments) { PracticeCalendar.startOfDay($0.start) }
     }
 
     // MARK: Period
 
-    /// Days shown as columns (week/day) or the month's visible weekdays.
-    public var days: [Date] {
+    /// Days shown as columns (week/day) or the month's visible weekdays. Cached: rebuilt when
+    /// the anchor, mode, weekend toggle or day limit changes.
+    public private(set) var days: [Date] = []
+
+    private func computeDays() -> [Date] {
         let cal = PracticeCalendar.self
         switch mode {
         case .agenda, .day:
@@ -264,13 +283,19 @@ public final class CalendarModel {
     }
 
     public func appointments(on day: Date) -> [Appointment] {
-        appointments.filter { PracticeCalendar.calendar.isDate($0.start, inSameDayAs: day) }
+        appointmentsByDay[PracticeCalendar.startOfDay(day)] ?? []
+    }
+
+    /// Minutes the practice is open for this employee on `day` (default window minus blocked time),
+    /// the denominator for the month's load. Falls back to 8 h when nothing is bookable.
+    public func openMinutes(on day: Date) -> Int {
+        let open = DayLayout.openMinutes(blocked: blocked, on: day, startHour: Int(DS.Layout.dayStartHour), endHour: Int(DS.Layout.dayEndHour))
+        return open > 0 ? open : 8 * 60
     }
 
     /// Strip dot: at least one treatment that is not cancelled.
     public func hasAppointments(on day: Date) -> Bool {
-        appointments.contains { $0.kind == .treatment && $0.status != .cancelled
-            && PracticeCalendar.calendar.isDate($0.start, inSameDayAs: day) }
+        appointments(on: day).contains { $0.kind == .treatment && $0.status != .cancelled }
     }
 
     // MARK: Agenda

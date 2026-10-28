@@ -7,8 +7,9 @@ struct MonthView: View {
     let model: CalendarModel
     @Environment(\.horizontalSizeClass) private var sizeClass
     private let maxChips = 5
-    /// A full day for the load bar: 8 hours of treatment.
-    private let fullDayMinutes = 8 * 60
+    @ScaledMetric(relativeTo: .caption) private var todayCircle: CGFloat = 22
+    @ScaledMetric(relativeTo: .body) private var phoneCellHeight: CGFloat = 76
+    @ScaledMetric(relativeTo: .caption) private var padCellHeight: CGFloat = 120
 
     private static let weekColumnWidth: CGFloat = 28
 
@@ -84,7 +85,7 @@ struct MonthView: View {
                         .font(.caption.weight(today ? .bold : .regular))
                         .monospacedDigit()
                         .foregroundStyle(today ? DS.Color.onAccent : (inMonth ? DS.Color.text : DS.Color.textMuted))
-                        .frame(minWidth: 22, minHeight: 22)
+                        .frame(minWidth: todayCircle, minHeight: todayCircle)
                         .background(Circle().fill(today ? DS.Color.accent : .clear))
                 }
                 if sizeClass == .regular {
@@ -99,30 +100,36 @@ struct MonthView: View {
                             .foregroundStyle(DS.Color.textMuted)
                     }
                 } else {
-                    load(summary, items: items)
+                    load(summary, items: items, day: day)
                 }
                 Spacer(minLength: 0)
             }
             .padding(DS.Space.s4)
-            .frame(maxWidth: .infinity, minHeight: sizeClass == .regular ? 120 : 76, alignment: .topLeading)
-            .background(background(inMonth: inMonth, today: today, summary: summary))
+            .frame(maxWidth: .infinity, minHeight: sizeClass == .regular ? padCellHeight : phoneCellHeight, alignment: .topLeading)
+            .background(background(day: day, inMonth: inMonth, today: today, summary: summary))
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("\(PracticeCalendar.format(day, "EEEEdMMMM")), \(summary.treatments) Termine")
+        .accessibilityLabel("\(PracticeCalendar.format(day, "EEEEdMMMM")), \(summary.treatments) Termine"
+            + (summary.cancelled > 0 ? ", \(summary.cancelled) abgesagt" : ""))
         .accessibilityHint("Zeigt diesen Tag")
     }
 
+    /// Booked minutes over the minutes the practice is open that day (absences and breaks excluded).
+    private func loadFraction(_ summary: AgendaSummary, on day: Date) -> Double {
+        min(Double(summary.bookedMinutes) / Double(max(model.openMinutes(on: day), 1)), 1)
+    }
+
     /// Today is tinted, busy days warm up with the load, spillover days sit back.
-    private func background(inMonth: Bool, today: Bool, summary: AgendaSummary) -> Color {
+    private func background(day: Date, inMonth: Bool, today: Bool, summary: AgendaSummary) -> Color {
         if today { return DS.Color.todayTint }
         guard inMonth else { return DS.Color.surface }
         guard sizeClass != .regular, summary.treatments > 0 else { return DS.Color.bg }
-        let fraction = min(Double(summary.bookedMinutes) / Double(fullDayMinutes), 1)
+        let fraction = loadFraction(summary, on: day)
         return DS.Color.accent.opacity(0.02 + 0.08 * fraction)
     }
 
     /// Phone: the number of treatments, up to three category dots, and a bar for how full the day is.
-    @ViewBuilder private func load(_ summary: AgendaSummary, items: [Appointment]) -> some View {
+    @ViewBuilder private func load(_ summary: AgendaSummary, items: [Appointment], day: Date) -> some View {
         if summary.treatments > 0 {
             let styles = categories(items)
             let cancelled = items.filter { $0.status == .cancelled && $0.kind == .treatment }.count
@@ -148,7 +155,7 @@ struct MonthView: View {
                     Capsule().fill(DS.Color.gridLine)
                         .overlay(alignment: .leading) {
                             Capsule().fill(DS.Color.accent)
-                                .frame(width: geo.size.width * min(CGFloat(summary.bookedMinutes) / CGFloat(fullDayMinutes), 1))
+                                .frame(width: geo.size.width * CGFloat(loadFraction(summary, on: day)))
                         }
                 }
                 .frame(height: 4)
