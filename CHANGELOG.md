@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Clearer error feedback: failed documentation saves and failed sign-ins are announced by VoiceOver and the save error plays a haptic.
+- A calendar that fails to load shows a full-screen retry state instead of a blank view.
+- Past and cancelled appointments stay readable: the colour is muted, not the text. The agenda time column, empty-state and lock icons scale with Dynamic Type; the period buttons and "Jetzt" are at least 44 pt.
+- Consistent German wording ("Speichern", "Textbausteine", "Lädt …", "Erneut laden").
+- Animations in the calendar follow Reduce Motion.
+- iPad: Settings stays open when the window switches between the sidebar and stack layout.
+- Apple Watch: the foreground notification only plays a sound when haptics are on; the widget shows a short caption for its off, not-synced and locked states and shrinks long names before truncating.
+
 ### Added
 
 - Apple Watch appointment notifications use the same card as the watch app (long look), show as banner with haptic in the foreground, and are grouped in one thread. Still local-only: no push server or device token.
