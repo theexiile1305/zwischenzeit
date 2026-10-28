@@ -268,9 +268,9 @@ struct ServiceRow: View {
     var body: some View {
         let type = reference.treatmentType(service.treatmentTypeID)
         HStack(spacing: DS.Space.s12) {
-            RoundedRectangle(cornerRadius: 2)
+            RoundedRectangle(cornerRadius: DS.Layout.edgeBarRadius)
                 .fill(TreatmentStyle(type?.category ?? .other).edge)
-                .frame(width: 4)
+                .frame(width: DS.Layout.edgeBarWidth)
             VStack(alignment: .leading, spacing: DS.Space.s2) {
                 Text(type?.name ?? "Unbekannte Leistung")
                 // The owner's own name on every row says nothing; a colleague's does.

@@ -96,7 +96,7 @@ public struct EventCard: View {
 
     public var body: some View {
         HStack(alignment: .top, spacing: 0) {
-            Rectangle().fill(model.style.edge).frame(width: 3)
+            Rectangle().fill(model.style.edge).frame(width: DS.Layout.edgeBarWidthCompact)
             VStack(alignment: .leading, spacing: 1) {
                 HStack(spacing: DS.Space.s2) {
                     // Narrow cards keep only time and name; the glyphs come back with room to spare.

@@ -209,7 +209,7 @@ private struct DayColumn: View {
                     // Hatched, so "not bookable" reads differently from "free".
                     ZStack {
                         DS.Color.unavailable
-                        DSHatch(color: DS.Color.gridLineStrong, spacing: 10, lineWidth: 1).opacity(0.5)
+                        DSHatch(color: DS.Color.gridLineStrong, spacing: DS.Layout.hatchSpacing, lineWidth: 1).opacity(0.5)
                     }
                     .frame(height: CGFloat(band.count - 1) * mh)
                     .clipped()

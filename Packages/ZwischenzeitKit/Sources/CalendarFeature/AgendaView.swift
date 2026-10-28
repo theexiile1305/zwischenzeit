@@ -140,7 +140,7 @@ private struct NextUpCard: View {
                 }
 
                 HStack(alignment: .top, spacing: DS.Space.s12) {
-                    RoundedRectangle(cornerRadius: 2).fill(style.edge).frame(width: 5)
+                    RoundedRectangle(cornerRadius: DS.Layout.edgeBarRadius).fill(style.edge).frame(width: DS.Layout.edgeBarWidthEmphasis)
                     VStack(alignment: .leading, spacing: DS.Space.s4) {
                         Text("\(PracticeCalendar.time(appointment.start))–\(PracticeCalendar.time(appointment.end))")
                             .font(.title2.weight(.bold))
@@ -361,7 +361,7 @@ private struct PauseRow: View {
         .background {
             ZStack {
                 DS.Color.unavailable.opacity(0.6)
-                DSHatch(color: DS.Color.gridLineStrong, spacing: 10, lineWidth: 1).opacity(0.6)
+                DSHatch(color: DS.Color.gridLineStrong, spacing: DS.Layout.hatchSpacing, lineWidth: 1).opacity(0.6)
             }
         }
         .padding(.vertical, DS.Space.s4)

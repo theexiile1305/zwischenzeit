@@ -46,7 +46,7 @@ public struct DesignGalleryView: View {
                         }
                         DSProgressSegments(current: 4, total: 10).frame(width: 260)
                         DSProgressSegments(current: 6, total: 6, tint: DS.Color.warning).frame(width: 260)
-                        ZStack { DS.Color.unavailable; DSHatch(color: DS.Color.gridLineStrong, spacing: 10, lineWidth: 1).opacity(0.5) }
+                        ZStack { DS.Color.unavailable; DSHatch(color: DS.Color.gridLineStrong, spacing: DS.Layout.hatchSpacing, lineWidth: 1).opacity(0.5) }
                             .frame(width: 260, height: 28)
                     }
                 }
