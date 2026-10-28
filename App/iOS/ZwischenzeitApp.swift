@@ -59,6 +59,23 @@ struct RootView: View {
     enum SidebarItem: Hashable { case calendar, settings }
 
     var body: some View {
+        content
+            // Split View, Slide Over and rotation swap the layout. Settings is a sidebar item in one
+            // and a pushed route in the other, so carry it across; appointments live in `path` for both.
+            .onChange(of: sizeClass) { _, newClass in
+                if newClass == .regular {
+                    if path.first == .settings {
+                        path.removeFirst()
+                        sidebarSelection = .settings
+                    }
+                } else if sidebarSelection == .settings {
+                    sidebarSelection = .calendar
+                    path.insert(.settings, at: 0)
+                }
+            }
+    }
+
+    @ViewBuilder private var content: some View {
         switch model.phase {
         case .launching:
             ProgressView().controlSize(.large)
@@ -111,7 +128,8 @@ struct RootView: View {
                 .navigationDestination(for: Route.self, destination: destination)
             }
         }
-        .onChange(of: sidebarSelection) { path.removeAll() }
+        // A size-class change sets the selection too and may push .settings; keep that route.
+        .onChange(of: sidebarSelection) { path.removeAll { $0 != .settings } }
     }
 
     @ViewBuilder private func destination(_ route: Route) -> some View {

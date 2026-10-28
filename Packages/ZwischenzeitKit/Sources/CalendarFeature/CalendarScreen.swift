@@ -181,7 +181,7 @@ public struct CalendarScreen: View {
                     ForEach(CalendarMode.allCases) { Text($0.title).tag($0) }
                 }
                 .pickerStyle(.segmented)
-                .frame(width: 280)
+                .frame(minWidth: 200, maxWidth: 280)
             }
 
             Menu {
