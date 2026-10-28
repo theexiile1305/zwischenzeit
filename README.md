@@ -12,6 +12,7 @@ Your practice day, at a glance between two patients.</p>
 [![CI](https://github.com/theexiile1305/zwischenzeit/actions/workflows/ci.yml/badge.svg)](https://github.com/theexiile1305/zwischenzeit/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/theexiile1305/zwischenzeit/actions/workflows/codeql.yml/badge.svg)](https://github.com/theexiile1305/zwischenzeit/actions/workflows/codeql.yml)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/theexiile1305/zwischenzeit/badge)](https://scorecard.dev/viewer/?uri=github.com/theexiile1305/zwischenzeit)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/15745/badge)](https://www.bestpractices.dev/projects/15745)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 </p>
