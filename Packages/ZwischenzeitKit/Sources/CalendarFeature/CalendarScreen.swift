@@ -27,16 +27,19 @@ public struct CalendarScreen: View {
                 weekStrip
             }
             Divider().overlay(DS.Color.gridLine)
-            if case .failed(let error) = model.state {
-                HStack {
+            // With data on screen a failed refresh is a banner; with nothing to show it replaces the content (below).
+            if case .failed(let error) = model.state, !model.appointments.isEmpty {
+                let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading)) : AnyLayout(HStackLayout())
+                layout {
                     DSBanner(LocalizedStringKey(error.message), kind: error == .offline ? .offline : .error)
-                    DSButton("Erneut", variant: .plain) { model.reload() }
+                    DSButton("Erneut laden", variant: .plain) { model.reload() }
                 }
                 .padding(.horizontal, DS.Space.s8)
                 .padding(.vertical, DS.Space.s4)
             }
             // One page per period: a new anchor replaces the page and it slides in from the side we moved towards.
             content
+                .overlay { failedState }
                 .id(model.anchor)
                 .transition(pageTransition)
                 .mask { Rectangle().ignoresSafeArea(edges: .bottom) } // clips the slide, not the home-indicator area
@@ -63,6 +66,20 @@ public struct CalendarScreen: View {
         if reduceMotion { return .opacity }
         let edge: Edge = model.navigationDirection >= 0 ? .trailing : .leading
         return .asymmetric(insertion: .move(edge: edge).combined(with: .opacity), removal: .opacity)
+    }
+
+    @ViewBuilder private var failedState: some View {
+        if case .failed(let error) = model.state, model.appointments.isEmpty {
+            ContentUnavailableView {
+                Label("Termine nicht geladen", systemImage: error == .offline ? "wifi.slash" : "exclamationmark.triangle")
+            } description: {
+                Text(error.message)
+            } actions: {
+                DSButton("Erneut laden") { model.reload() }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(DS.Color.bg)
+        }
     }
 
     @ViewBuilder private var content: some View {
