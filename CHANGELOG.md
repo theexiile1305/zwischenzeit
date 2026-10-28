@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Consistent German wording ("Speichern", "Textbausteine", "Lädt …", "Erneut laden").
 - Animations in the calendar follow Reduce Motion.
 - iPad: Settings stays open when the window switches between the sidebar and stack layout.
+- The documentation text field has a VoiceOver label and hint.
 - Apple Watch: the foreground notification only plays a sound when haptics are on; the widget shows a short caption for its off, not-synced and locked states and shrinks long names before truncating.
 
 ### Added

@@ -32,6 +32,9 @@ public struct DocumentationEditor: View {
                 phaseBanner
                 ZStack(alignment: .topLeading) {
                     DraftEditor(text: $model.text, pendingInsert: $pendingInsert, isFocused: $isFocused)
+                        // The placeholder below is hidden from VoiceOver, so its question becomes the hint.
+                        .accessibilityLabel("Dokumentationstext")
+                        .accessibilityHint("Was wurde gemacht, wie wurde es vertragen?")
                     if model.text.isEmpty {
                         Text("Was wurde gemacht, wie wurde es vertragen?")
                             .foregroundStyle(DS.Color.textMuted)
