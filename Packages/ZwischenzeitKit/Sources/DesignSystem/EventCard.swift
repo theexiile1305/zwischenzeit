@@ -100,40 +100,40 @@ public struct EventCard: View {
             VStack(alignment: .leading, spacing: 1) {
                 HStack(spacing: DS.Space.s2) {
                     // Narrow cards keep only time and name; the glyphs come back with room to spare.
-                    if model.isSeries && density == .full { Image(systemName: "infinity").font(.caption2.weight(.bold)) }
+                    if model.isSeries && density == .full { Image(systemName: "infinity").font(.caption.weight(.bold)) }
                     // Time and session stay. Only the name truncates.
                     Group {
                         Text(model.time).lineLimit(1).layoutPriority(2)
                         Text(model.title).lineLimit(1).truncationMode(.tail).layoutPriority(1)
                         if let session = model.session, density == .full { Text(session).lineLimit(1).layoutPriority(1) }
                     }
-                    .font(.caption2.weight(.semibold)).monospacedDigit()
+                    .font(.caption.weight(.semibold)).monospacedDigit()
                     if density == .compact {
                         // Short slots: the treatment gets whatever room is left on the one line.
                         // All or nothing: a lone first letter helps nobody.
                         ViewThatFits(in: .horizontal) {
-                            Text(model.treatment).font(.caption2).lineLimit(1).fixedSize().opacity(0.85)
+                            Text(model.treatment).font(.caption).lineLimit(1).fixedSize().opacity(0.85)
                             Color.clear.frame(width: 0, height: 0)
                         }
                     }
                     Spacer(minLength: 0)
-                    if model.isLastSession && density == .full { Image(systemName: "flag.checkered").font(.caption2.weight(.bold)) }
+                    if model.isLastSession && density == .full { Image(systemName: "flag.checkered").font(.caption.weight(.bold)) }
                     // Waiting and overdue are live signals, so they survive narrow cards.
                     if density == .full || model.checkIn == .waiting || model.checkIn == .overdue { statusGlyph }
                 }
                 if density == .full {
                     HStack(spacing: DS.Space.s4) {
-                        Text(model.treatment).font(.caption2).lineLimit(2)
+                        Text(model.treatment).font(.caption).lineLimit(2)
                         Spacer(minLength: 0)
                         if let room = model.room {
-                            Text(room).font(.caption2.weight(.medium)).lineLimit(1).layoutPriority(1)
+                            Text(room).font(.caption.weight(.medium)).lineLimit(1).layoutPriority(1)
                         }
                         if let code = model.shortCode {
-                            Text(code).font(.caption2.weight(.bold).italic())
+                            Text(code).font(.caption.weight(.bold).italic())
                         }
                     }
                     if let note = model.note {
-                        Text(note).font(.caption2).lineLimit(1)
+                        Text(note).font(.caption).lineLimit(1)
                     }
                 }
             }
@@ -155,7 +155,7 @@ public struct EventCard: View {
             }
         }
         .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xs))
-        .dynamicTypeSize(...DynamicTypeSize.accessibility1)
+        .dynamicTypeSize(...DynamicTypeSize.accessibility3)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(model.accessibilityText)
         .accessibilityHint("Öffnet Details")
@@ -164,7 +164,7 @@ public struct EventCard: View {
 
     @ViewBuilder private var statusGlyph: some View {
         if model.checkIn == .overdue {
-            Image(systemName: "clock").font(.caption2.weight(.bold))
+            Image(systemName: "clock").font(.caption.weight(.bold))
         } else {
             statusGlyphByStatus
         }
@@ -172,8 +172,8 @@ public struct EventCard: View {
 
     @ViewBuilder private var statusGlyphByStatus: some View {
         switch model.status {
-        case .arrived: Image(systemName: "person.fill.checkmark").font(.caption2.weight(model.checkIn == .waiting ? .heavy : .regular))
-        case .cancelled: Image(systemName: "xmark.circle").font(.caption2)
+        case .arrived: Image(systemName: "person.fill.checkmark").font(.caption.weight(model.checkIn == .waiting ? .heavy : .regular))
+        case .cancelled: Image(systemName: "xmark.circle").font(.caption)
         case .planned: EmptyView()
         }
     }

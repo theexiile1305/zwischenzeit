@@ -47,7 +47,8 @@ public struct CalendarScreen: View {
                     DragGesture(minimumDistance: 30)
                         .onEnded { value in
                             let dx = value.translation.width, dy = value.translation.height
-                            guard abs(dx) > 50, abs(dx) > abs(dy) else { return }
+                            // The week grid and the month scroll sideways themselves; they step with the header buttons.
+                            guard model.mode == .agenda || model.mode == .day, abs(dx) > 50, abs(dx) > abs(dy) else { return }
                             model.step(dx < 0 ? 1 : -1)
                         }
                 )

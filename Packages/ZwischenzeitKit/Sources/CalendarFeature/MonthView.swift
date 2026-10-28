@@ -95,7 +95,7 @@ struct MonthView: View {
                     }
                     if items.count > maxChips {
                         Text("+\(items.count - maxChips) weitere")
-                            .font(.caption2)
+                            .font(.caption)
                             .foregroundStyle(DS.Color.textMuted)
                     }
                 } else {
