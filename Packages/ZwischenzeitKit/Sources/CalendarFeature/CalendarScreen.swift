@@ -249,7 +249,7 @@ public struct CalendarScreen: View {
             DragGesture(minimumDistance: 30)
                 .onEnded { value in
                     guard abs(value.translation.width) > 50, abs(value.translation.width) > abs(value.translation.height) else { return }
-                    withAnimation(.snappy) { model.stepWeek(value.translation.width < 0 ? 1 : -1) }
+                    DS.Motion.perform(reduce: reduceMotion) { model.stepWeek(value.translation.width < 0 ? 1 : -1) }
                 }
         )
         .accessibilityElement(children: .contain)
