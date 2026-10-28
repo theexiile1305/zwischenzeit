@@ -10,11 +10,38 @@ struct MonthView: View {
     /// A full day for the load bar: 8 hours of treatment.
     private let fullDayMinutes = 8 * 60
 
+    private static let weekColumnWidth: CGFloat = 28
+
     private var columnCount: Int { model.showWeekend ? 7 : 5 }
+
+    /// The visible days split into calendar weeks.
+    private var weeks: [[Date]] {
+        let days = model.days
+        return stride(from: 0, to: days.count, by: columnCount).map { Array(days[$0..<min($0 + columnCount, days.count)]) }
+    }
+
+    /// Week number; tap opens that week.
+    private func weekNumberCell(_ firstDay: Date) -> some View {
+        let number = PracticeCalendar.calendar.component(.weekOfYear, from: firstDay)
+        return Button {
+            model.go(to: firstDay, mode: .week)
+        } label: {
+            Text("\(number)")
+                .font(.caption2.weight(.medium)).monospacedDigit()
+                .foregroundStyle(DS.Color.textMuted)
+                .frame(width: Self.weekColumnWidth)
+                .frame(maxHeight: .infinity)
+                .background(DS.Color.surface)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Kalenderwoche \(number)")
+        .accessibilityHint("Zeigt diese Woche")
+    }
 
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 0) {
+                Text("KW").font(.caption2).foregroundStyle(DS.Color.textMuted).frame(width: Self.weekColumnWidth)
                 ForEach(Array(model.days.prefix(columnCount)), id: \.self) { day in
                     Text(PracticeCalendar.format(day, "EEE"))
                         .font(.caption.weight(.semibold))
@@ -26,9 +53,14 @@ struct MonthView: View {
             .accessibilityHidden(true)
 
             ScrollView {
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 1), count: columnCount), spacing: 1) {
-                    ForEach(model.days, id: \.self) { day in
-                        cell(day)
+                VStack(spacing: 1) {
+                    ForEach(weeks, id: \.first) { week in
+                        HStack(spacing: 1) {
+                            weekNumberCell(week.first!)
+                            ForEach(week, id: \.self) { day in
+                                cell(day)
+                            }
+                        }
                     }
                 }
                 .background(DS.Color.gridLine)
@@ -56,9 +88,9 @@ struct MonthView: View {
                         .background(Circle().fill(today ? DS.Color.accent : .clear))
                 }
                 if sizeClass == .regular {
-                    ForEach(items.prefix(maxChips), id: \.id) { a in
+                    ForEach(items.sorted { $0.start < $1.start }.prefix(maxChips), id: \.id) { a in
                         let card = model.card(for: a)
-                        MonthChip(time: card.time, treatment: card.treatment, style: card.style)
+                        MonthChip(time: card.time, treatment: card.treatment, style: card.style, isCancelled: a.status == .cancelled)
                             .opacity(a.status == .cancelled ? 0.5 : 1)
                     }
                     if items.count > maxChips {
@@ -67,27 +99,51 @@ struct MonthView: View {
                             .foregroundStyle(DS.Color.textMuted)
                     }
                 } else {
-                    load(summary)
+                    load(summary, items: items)
                 }
                 Spacer(minLength: 0)
             }
             .padding(DS.Space.s4)
             .frame(maxWidth: .infinity, minHeight: sizeClass == .regular ? 120 : 76, alignment: .topLeading)
-            .background(inMonth ? DS.Color.bg : DS.Color.surface)
+            .background(background(inMonth: inMonth, today: today, summary: summary))
         }
         .buttonStyle(.plain)
         .accessibilityLabel("\(PracticeCalendar.format(day, "EEEEdMMMM")), \(summary.treatments) Termine")
         .accessibilityHint("Zeigt diesen Tag")
     }
 
-    /// Phone: the number of treatments and a bar for how full the day is.
-    @ViewBuilder private func load(_ summary: AgendaSummary) -> some View {
+    /// Today is tinted, busy days warm up with the load, spillover days sit back.
+    private func background(inMonth: Bool, today: Bool, summary: AgendaSummary) -> Color {
+        if today { return DS.Color.todayTint }
+        guard inMonth else { return DS.Color.surface }
+        guard sizeClass != .regular, summary.treatments > 0 else { return DS.Color.bg }
+        let fraction = min(Double(summary.bookedMinutes) / Double(fullDayMinutes), 1)
+        return DS.Color.accent.opacity(0.02 + 0.08 * fraction)
+    }
+
+    /// Phone: the number of treatments, up to three category dots, and a bar for how full the day is.
+    @ViewBuilder private func load(_ summary: AgendaSummary, items: [Appointment]) -> some View {
         if summary.treatments > 0 {
+            let styles = categories(items)
+            let cancelled = items.filter { $0.status == .cancelled && $0.kind == .treatment }.count
             VStack(alignment: .leading, spacing: DS.Space.s4) {
-                Text("\(summary.treatments)")
-                    .font(.title3.weight(.semibold))
-                    .monospacedDigit()
-                    .foregroundStyle(DS.Color.text)
+                HStack(spacing: DS.Space.s4) {
+                    Text("\(summary.treatments)")
+                        .font(.title3.weight(.semibold))
+                        .monospacedDigit()
+                        .foregroundStyle(DS.Color.text)
+                    if cancelled > 0 {
+                        Image(systemName: "xmark.circle").font(.caption2).foregroundStyle(DS.Color.textMuted)
+                            .accessibilityHidden(true)
+                    }
+                }
+                HStack(spacing: 3) {
+                    ForEach(styles, id: \.self) { style in
+                        Circle().fill(style.edge).frame(width: 6, height: 6)
+                    }
+                }
+                .frame(height: 6)
+                .accessibilityHidden(true)
                 GeometryReader { geo in
                     Capsule().fill(DS.Color.gridLine)
                         .overlay(alignment: .leading) {
@@ -98,5 +154,16 @@ struct MonthView: View {
                 .frame(height: 4)
             }
         }
+    }
+
+    /// The first three distinct treatment categories of the day, in time order.
+    private func categories(_ items: [Appointment]) -> [TreatmentStyle] {
+        var seen: [TreatmentStyle] = []
+        for a in items.sorted(by: { $0.start < $1.start }) where a.kind == .treatment && a.status != .cancelled {
+            let style = model.style(a)
+            if !seen.contains(style) { seen.append(style) }
+            if seen.count == 3 { break }
+        }
+        return seen
     }
 }

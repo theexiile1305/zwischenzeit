@@ -184,17 +184,20 @@ public struct MonthChip: View {
     let time: String
     let treatment: String
     let style: TreatmentStyle
+    let isCancelled: Bool
 
-    public init(time: String, treatment: String, style: TreatmentStyle) {
+    public init(time: String, treatment: String, style: TreatmentStyle, isCancelled: Bool = false) {
         self.time = time
         self.treatment = treatment
         self.style = style
+        self.isCancelled = isCancelled
     }
 
     public var body: some View {
         Text("\(time) \(treatment)")
             .font(.caption2).monospacedDigit()
             .lineLimit(1)
+            .strikethrough(isCancelled)
             .foregroundStyle(style.foreground)
             .padding(.horizontal, DS.Space.s4)
             .frame(maxWidth: .infinity, alignment: .leading)
