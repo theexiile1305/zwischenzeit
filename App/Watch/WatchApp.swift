@@ -113,6 +113,7 @@ struct WatchHomeView: View {
                         if !rest.isEmpty {
                             Text(left == 1 ? "Heute noch 1 Termin" : "Heute noch \(left) Termine")
                                 .font(.caption2.weight(.semibold)).foregroundStyle(.secondary).textCase(.uppercase)
+                                .accessibilityAddTraits(.isHeader)
                             ForEach(Array(zip(rest.indices, rest)), id: \.1.id) { i, item in
                                 let previousEnd = i == rest.startIndex ? payload.next(at: now)?.end : rest[i - 1].end
                                 if let previousEnd, case let gap = Int(item.start.timeIntervalSince(previousEnd) / 60), gap >= 15 {
