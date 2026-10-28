@@ -209,3 +209,24 @@ private extension UpcomingItem {
         return c
     }
 }
+
+@Suite struct NotificationContentTests {
+    private func plannedItem(title: String = "A. B.", subtitle: String? = "Krankengymnastik", room: String? = "Raum 1") -> UpcomingItem {
+        UpcomingItem(id: "a1", start: at(10, 0), end: at(10, 20), title: title, subtitle: subtitle, room: room, style: .kg)
+    }
+
+    @Test func titleCountsDownOrSaysNow() {
+        #expect(NotificationContent.title(for: plannedItem(), leadMinutes: 10) == "In 10 Min.: 10:00")
+        #expect(NotificationContent.title(for: plannedItem(), leadMinutes: 0) == "Jetzt: 10:00")
+    }
+
+    @Test func bodyJoinsOnlyWhatThePhoneSent() {
+        #expect(NotificationContent.body(for: plannedItem()) == "A. B. · Krankengymnastik · Raum 1")
+        #expect(NotificationContent.body(for: plannedItem(subtitle: nil, room: nil)) == "A. B.")
+    }
+
+    @Test func userInfoCarriesOnlyTheID() {
+        let info = NotificationContent.userInfo(for: plannedItem(title: "Anna Bergmann"))
+        #expect(info == [NotificationContent.itemIDKey: "a1"])
+    }
+}
