@@ -96,6 +96,11 @@ extension DS {
         public static let dayEndHour: CGFloat = 20
         public static let eventMinHeight: CGFloat = 20
         public static let eventGap: CGFloat = 2
+        public static let edgeBarWidth: CGFloat = 4
+        public static let edgeBarWidthCompact: CGFloat = 3
+        public static let edgeBarWidthEmphasis: CGFloat = 5
+        public static let edgeBarRadius: CGFloat = 2
+        public static let hatchSpacing: CGFloat = 10
     }
 
     public enum Shadow {
