@@ -89,7 +89,9 @@ struct LoginView: View {
 
     @ViewBuilder private func footer(_ hint: String) -> some View {
         if let error = model.signInError {
-            Text(error).foregroundStyle(DS.Color.danger)
+            Label(error, systemImage: "exclamationmark.triangle.fill")
+                .foregroundStyle(DS.Color.danger)
+                .onAppear { AccessibilityNotification.Announcement(error).post() }
         } else {
             Text(hint)
         }

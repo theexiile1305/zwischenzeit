@@ -55,7 +55,8 @@ final class NotificationPresenter: NSObject, UNUserNotificationCenterDelegate, @
 
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification) async
         -> UNNotificationPresentationOptions {
-        [.banner, .sound]
+        // The sound is set on the content only when the user enabled haptics.
+        notification.request.content.sound == nil ? [.banner] : [.banner, .sound]
     }
 }
 
