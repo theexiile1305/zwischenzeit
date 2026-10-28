@@ -70,6 +70,9 @@ public struct DocumentationEditor: View {
             }
             .sensoryFeedback(.success, trigger: model.savedCount)
             .sensoryFeedback(.selection, trigger: insertCount)
+            .sensoryFeedback(.error, trigger: model.phase) { _, new in
+                if case .failed = new { return true } else { return false }
+            }
             .onAppear { isFocused = true }
         }
     }
@@ -98,9 +101,13 @@ public struct DocumentationEditor: View {
     @ViewBuilder private var phaseBanner: some View {
         switch model.phase {
         case .failed(let error):
-            DSBanner(LocalizedStringKey(error.message + " Der Text bleibt erhalten."), kind: error == .offline ? .offline : .error)
-                .padding([.horizontal, .top], DS.Space.s12)
-                .onTapGesture { model.dismissError() }
+            Button { model.dismissError() } label: {
+                DSBanner(LocalizedStringKey(error.message + " Der Text bleibt erhalten."), kind: error == .offline ? .offline : .error)
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint("Zum Schließen tippen")
+            .padding([.horizontal, .top], DS.Space.s12)
+            .onAppear { AccessibilityNotification.Announcement(error.message).post() }
         case .conflict(let theirs):
             ConflictBanner(theirs: theirs, onKeepBoth: model.mergeConflict, onTakeTheirs: model.takeTheirs)
                 .padding([.horizontal, .top], DS.Space.s12)
