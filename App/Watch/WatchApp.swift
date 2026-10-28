@@ -5,6 +5,7 @@ import SwiftUI
 import UserNotifications
 import WatchSync
 import WatchUI
+import WatchKit
 import WidgetKit
 
 /// Counts and error codes only - never patient names, free text or payload contents.
@@ -15,6 +16,7 @@ struct ZwischenzeitWatchApp: App {
     @State private var receiver: WatchReceiver
 
     init() {
+        NotificationScheduler.configure()
         // Built in a plain init body, not as the @State property's default value: an async,
         // @MainActor-isolated closure there conflicts with the macro-synthesized initializer's
         // actor-isolation inference ("default argument cannot be both main actor-isolated and
@@ -42,6 +44,43 @@ struct ZwischenzeitWatchApp: App {
             // without needing the user to open the app first.
             await receiver.waitForPendingContext()
         }
+        WKNotificationScene(controller: NotificationController.self,
+                            category: WatchSyncConstants.notificationCategory)
+    }
+}
+
+/// Shows the banner and plays the haptic while the app is in the foreground, too.
+final class NotificationPresenter: NSObject, UNUserNotificationCenterDelegate, @unchecked Sendable {
+    static let shared = NotificationPresenter()
+
+    func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification) async
+        -> UNNotificationPresentationOptions {
+        [.banner, .sound]
+    }
+}
+
+/// Long look of the heads-up notification: the same card as the app. The item is read from the
+/// App Group store by id (the payload text itself holds nothing beyond what the settings allow).
+final class NotificationController: WKUserNotificationHostingController<NotificationLongLook> {
+    private var itemID: String?
+
+    override var body: NotificationLongLook { NotificationLongLook(itemID: itemID) }
+
+    override func didReceive(_ notification: UNNotification) {
+        itemID = notification.request.content.userInfo[NotificationContent.itemIDKey] as? String
+    }
+}
+
+struct NotificationLongLook: View {
+    let itemID: String?
+
+    var body: some View {
+        let payload = UpcomingStore.load()
+        let item = payload?.items.first { $0.id == itemID }
+        let now = Date.now
+        WatchNextCard(item: item, now: now, isStale: payload?.isStale(at: now) ?? false,
+                      generatedAt: payload?.generatedAt,
+                      state: payload == nil ? .locked : .enabled)
     }
 }
 
@@ -100,6 +139,15 @@ struct WatchHomeView: View {
 /// Heads-up notifications: local notifications scheduled on the watch, so they fire on the wrist
 /// even while the phone is in use. The phone schedules none (no duplicates).
 enum NotificationScheduler {
+    /// Registers the category and the foreground delegate.
+    @MainActor static func configure() {
+        let center = UNUserNotificationCenter.current()
+        center.delegate = NotificationPresenter.shared
+        let category = UNNotificationCategory(
+            identifier: WatchSyncConstants.notificationCategory, actions: [], intentIdentifiers: [], options: [])
+        center.setNotificationCategories([category])
+    }
+
     static func requestAuthorization() async {
         do {
             _ = try await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound])
@@ -117,9 +165,11 @@ enum NotificationScheduler {
             let item = planned.item
             let content = UNMutableNotificationContent()
             let minutes = Int((item.start.timeIntervalSince(planned.fireDate) / 60).rounded())
-            content.title = minutes > 0 ? "In \(minutes) Min.: \(PracticeCalendar.time(item.start))" : "Jetzt: \(PracticeCalendar.time(item.start))"
-            content.body = [item.title, item.subtitle, item.room].compactMap { $0 }.joined(separator: " · ")
+            content.title = NotificationContent.title(for: item, leadMinutes: minutes)
+            content.body = NotificationContent.body(for: item)
+            content.userInfo = NotificationContent.userInfo(for: item)
             content.categoryIdentifier = WatchSyncConstants.notificationCategory
+            content.threadIdentifier = "appointments"
             content.interruptionLevel = .timeSensitive
             if payload.settings.haptic { content.sound = .default }
             let components = PracticeCalendar.calendar.dateComponents(in: PracticeCalendar.timeZone, from: planned.fireDate)

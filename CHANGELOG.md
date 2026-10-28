@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Apple Watch appointment notifications use the same card as the watch app (long look), show as banner with haptic in the foreground, and are grouped in one thread. Still local-only: no push server or device token.
+
 ## [0.1.2] - 2026-10-27
 
 ### Fixed

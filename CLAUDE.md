@@ -152,7 +152,7 @@ Launch arguments (Debug builds only, via `AppModel.launchArguments`), read in `A
 2. `WatchSync/UpcomingBuilder` formats them per the user's privacy settings (`WatchSettings`: name display, treatment, room, lead time). The session label (n/m) is always sent; it contains no name.
 3. `PhoneWatchBridge` sends the result via `WCSession.updateApplicationContext`.
 4. On the watch, `WatchReceiver` stores it as JSON in the App Group (`APP_GROUP_ID`, read from the `AppGroupID` Info.plist key).
-5. The watch app, the widget (`App/WatchWidgets`) and the local notification scheduling read that file.
+5. The watch app, the widget (`App/WatchWidgets`) and the local notification scheduling read that file. Notifications are local only (no APNs, no tokens). `NotificationContent` builds the text; the long look (`NotificationController`, `WKNotificationScene`) renders `WatchNextCard` for the id in `userInfo`.
 
 Sync runs on launch, on foreground, after calendar loads, after settings changes, and from a background task (`<bundle ID>.watchsync`).
 

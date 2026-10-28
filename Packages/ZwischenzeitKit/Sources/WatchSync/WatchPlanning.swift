@@ -71,6 +71,25 @@ public enum NotificationPlanner {
     }
 }
 
+/// Watch side: what a heads-up notification says. The text follows the redaction the phone already
+/// applied to the item; `userInfo` carries only the id, the long look reads the rest from the store.
+public enum NotificationContent {
+    public static let itemIDKey = "itemID"
+
+    public static func title(for item: UpcomingItem, leadMinutes minutes: Int) -> String {
+        let time = PracticeCalendar.time(item.start)
+        return minutes > 0 ? "In \(minutes) Min.: \(time)" : "Jetzt: \(time)"
+    }
+
+    public static func body(for item: UpcomingItem) -> String {
+        [item.title, item.subtitle, item.room].compactMap { $0 }.joined(separator: " · ")
+    }
+
+    public static func userInfo(for item: UpcomingItem) -> [String: String] {
+        [itemIDKey: item.id]
+    }
+}
+
 /// Watch widget: when the complication should switch to the next appointment.
 public enum WidgetTimelinePlanner {
     public struct Entry: Equatable, Sendable {
