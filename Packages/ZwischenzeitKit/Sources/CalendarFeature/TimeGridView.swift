@@ -7,7 +7,8 @@ struct TimeGridView: View {
     @Bindable var model: CalendarModel
     let onOpen: (AppointmentID) -> Void
 
-    @State private var didScrollToNow = false
+    /// Set on appear and when the period changes; consumed once the data is in.
+    @State private var pendingScroll = true
     /// Live pinch value; committed to the model on release so a pinch does not
     /// invalidate every observer of `CalendarModel` on each frame.
     @State private var pinchHeight: CGFloat?
@@ -38,8 +39,10 @@ struct TimeGridView: View {
                     .padding(.top, DS.Space.s8)
                     .padding(.bottom, DS.Space.s48)
                 }
-                .onAppear { scrollToNow(proxy) }
-                .onChange(of: model.mode) { didScrollToNow = false; scrollToNow(proxy) }
+                .onAppear { scrollToAnchor(proxy) }
+                .onChange(of: model.mode) { pendingScroll = true; scrollToAnchor(proxy) }
+                .onChange(of: model.anchor) { pendingScroll = true; scrollToAnchor(proxy) }
+                .onChange(of: model.state) { scrollToAnchor(proxy) }
             }
             .simultaneousGesture(
                 MagnifyGesture()
@@ -119,11 +122,23 @@ struct TimeGridView: View {
         .accessibilityHidden(true)
     }
 
-    private func scrollToNow(_ proxy: ScrollViewProxy) {
-        guard !didScrollToNow else { return }
-        didScrollToNow = true
-        let hour = PracticeCalendar.calendar.component(.hour, from: model.currentDate)
-        let target = min(max(hour - 1, model.dayStartHour), model.dayEndHour)
+    /// Today: an hour before now. Any other day: the first appointment, else the day's start.
+    private var anchorHour: Int {
+        let cal = PracticeCalendar.self
+        if model.days.contains(where: model.isToday) {
+            let hour = cal.calendar.component(.hour, from: model.currentDate)
+            if (model.dayStartHour...model.dayEndHour).contains(hour) { return max(hour - 1, model.dayStartHour) }
+        }
+        let first = model.days.flatMap { model.appointments(on: $0) }
+            .filter { $0.status != .cancelled }
+            .map { cal.minuteOfDay($0.start) / 60 }.min()
+        return min(max((first ?? model.dayStartHour) - 1, model.dayStartHour), model.dayEndHour)
+    }
+
+    private func scrollToAnchor(_ proxy: ScrollViewProxy) {
+        guard pendingScroll, model.state == .loaded else { return }
+        pendingScroll = false
+        let target = anchorHour
         DispatchQueue.main.async { proxy.scrollTo(target, anchor: .top) }
     }
 }
@@ -137,7 +152,11 @@ private struct DayColumn: View {
 
     var body: some View {
         let appointments = model.appointments(on: day)
-        let placed = DayLayout.place(appointments, dayStartHour: model.dayStartHour)
+                // Cancelled slots must not squeeze real appointments, so they sit behind as a full-width lane.
+        let cancelledLane = DayLayout.place(appointments.filter { $0.status == .cancelled }, dayStartHour: model.dayStartHour)
+            .map { PlacedEvent(id: $0.id, top: $0.top, height: $0.height, column: 0, columnCount: 1) }
+        let active = DayLayout.place(appointments.filter { $0.status != .cancelled }, dayStartHour: model.dayStartHour)
+        let placed = cancelledLane + active // drawn in order: cancelled behind
         let byID = Dictionary(appointments.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         let mh = minuteHeight
 

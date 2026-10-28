@@ -51,15 +51,17 @@ public struct EventCardModel: Identifiable, Hashable, Sendable {
     public var room: String?                // "Raum 2"
     public var isLastSession: Bool          // n == m: prescription used up
     public var isPast: Bool                 // already over: drawn dimmed
+    /// Live check-in state (waiting / overdue stand out in the grid). `nil`: nothing to flag.
+    public var checkIn: DSCheckInBadge.State?
 
     public init(id: String, time: String, title: String, session: String? = nil, treatment: String,
                 note: String? = nil, shortCode: String? = nil, style: TreatmentStyle,
                 status: EventStatus = .planned, isSeries: Bool = false, room: String? = nil,
-                isLastSession: Bool = false, isPast: Bool = false) {
+                isLastSession: Bool = false, isPast: Bool = false, checkIn: DSCheckInBadge.State? = nil) {
         self.id = id; self.time = time; self.title = title; self.session = session
         self.treatment = treatment; self.note = note; self.shortCode = shortCode
         self.style = style; self.status = status; self.isSeries = isSeries
-        self.room = room; self.isLastSession = isLastSession; self.isPast = isPast
+        self.room = room; self.isLastSession = isLastSession; self.isPast = isPast; self.checkIn = checkIn
     }
 
     public var accessibilityText: String {
@@ -73,7 +75,7 @@ public struct EventCardModel: Identifiable, Hashable, Sendable {
         if isLastSession { parts.append("letzte Behandlung des Rezepts") }
         if isSeries { parts.append("Serientermin") }
         switch status {
-        case .arrived: parts.append("ist da")
+        case .arrived: parts.append(checkIn == .waiting ? "ist da und wartet" : "ist da")
         case .cancelled: parts.append("abgesagt")
         case .planned: break
         }
@@ -116,7 +118,8 @@ public struct EventCard: View {
                     }
                     Spacer(minLength: 0)
                     if model.isLastSession && density == .full { Image(systemName: "flag.checkered").font(.caption2.weight(.bold)) }
-                    if density == .full { statusGlyph }
+                    // Waiting and overdue are live signals, so they survive narrow cards.
+                    if density == .full || model.checkIn == .waiting || model.checkIn == .overdue { statusGlyph }
                 }
                 if density == .full {
                     HStack(spacing: DS.Space.s4) {
@@ -142,6 +145,14 @@ public struct EventCard: View {
         .frame(minWidth: 0, maxWidth: .infinity, minHeight: DS.Layout.eventMinHeight, maxHeight: .infinity, alignment: .topLeading)
         .background(model.style.fill)
         .overlay { if model.status == .cancelled { DSHatch().opacity(0.18) } }
+        .overlay {
+            // The patient is here and the slot is now: the one card to look at.
+            if model.checkIn == .waiting {
+                RoundedRectangle(cornerRadius: DS.Radius.xs).strokeBorder(DS.Color.success, lineWidth: 2)
+            } else if model.checkIn == .overdue {
+                RoundedRectangle(cornerRadius: DS.Radius.xs).strokeBorder(DS.Color.warning, style: StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
+            }
+        }
         .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xs))
         .opacity(model.isPast && model.status != .cancelled ? 0.6 : 1)
         .dynamicTypeSize(...DynamicTypeSize.xxLarge)
@@ -152,8 +163,16 @@ public struct EventCard: View {
     }
 
     @ViewBuilder private var statusGlyph: some View {
+        if model.checkIn == .overdue {
+            Image(systemName: "clock").font(.caption2.weight(.bold))
+        } else {
+            statusGlyphByStatus
+        }
+    }
+
+    @ViewBuilder private var statusGlyphByStatus: some View {
         switch model.status {
-        case .arrived: Image(systemName: "person.fill.checkmark").font(.caption2)
+        case .arrived: Image(systemName: "person.fill.checkmark").font(.caption2.weight(model.checkIn == .waiting ? .heavy : .regular))
         case .cancelled: Image(systemName: "xmark.circle").font(.caption2)
         case .planned: EmptyView()
         }

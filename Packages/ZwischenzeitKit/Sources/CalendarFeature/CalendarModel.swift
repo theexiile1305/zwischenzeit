@@ -23,13 +23,13 @@ public enum LoadState: Equatable, Sendable {
 /// State and loading for the calendar screens (agenda, day, week, month).
 @MainActor @Observable
 public final class CalendarModel {
-    public var mode: CalendarMode = .week { didSet { if mode != oldValue { reloadIfNeeded() } } }
-    public private(set) var anchor: Date
-    public var showWeekend = false { didSet { if showWeekend != oldValue { reload() } } }
+    public var mode: CalendarMode = .week { didSet { if mode != oldValue { updateVisibleHours(); reloadIfNeeded() } } }
+    public private(set) var anchor: Date { didSet { updateVisibleHours() } }
+    public var showWeekend = false { didSet { if showWeekend != oldValue { updateVisibleHours(); reload() } } }
     public var minuteHeight: CGFloat = DS.Layout.minuteHeightDefault
     public var employeeID: EmployeeID { didSet { if employeeID != oldValue { reload() } } }
 
-    public private(set) var appointments: [Appointment] = []
+    public private(set) var appointments: [Appointment] = [] { didSet { updateVisibleHours() } }
     public private(set) var blocked: [BlockedInterval] = []
     public private(set) var state: LoadState = .idle
     /// The range `appointments` and `blocked` currently hold.
@@ -43,8 +43,25 @@ public final class CalendarModel {
     let now: () -> Date
     private var loadTask: Task<Void, Never>?
 
-    public let dayStartHour = Int(DS.Layout.dayStartHour)
-    public let dayEndHour = Int(DS.Layout.dayEndHour)
+    /// The grid's hour window: the practice default, widened so early or late
+    /// appointments of the visible days are never clipped.
+    public private(set) var dayStartHour = Int(DS.Layout.dayStartHour)
+    public private(set) var dayEndHour = Int(DS.Layout.dayEndHour)
+
+    private func updateVisibleHours() {
+        var lo = Int(DS.Layout.dayStartHour), hi = Int(DS.Layout.dayEndHour)
+        if mode == .day || mode == .week {
+            let cal = PracticeCalendar.self
+            let first = days.first, last = days.last.map { cal.calendar.date(byAdding: .day, value: 1, to: $0)! }
+            for a in appointments where a.start >= (first ?? .distantFuture) && a.start < (last ?? .distantPast) {
+                lo = min(lo, cal.minuteOfDay(a.start) / 60)
+                // An end on the next day (or at midnight) means the window runs to 24.
+                hi = cal.calendar.isDate(a.end, inSameDayAs: a.start) ? max(hi, (cal.minuteOfDay(a.end) + 59) / 60) : 24
+            }
+        }
+        if lo != dayStartHour { dayStartHour = lo }
+        if hi != dayEndHour { dayEndHour = hi }
+    }
 
     public init(api: any TToolsAPI, employeeID: EmployeeID, reference: ReferenceData, now: @escaping () -> Date = { .now }) {
         self.api = api
@@ -255,6 +272,14 @@ public final class CalendarModel {
 
     // MARK: Cards
 
+    private func checkInState(_ a: Appointment) -> DSCheckInBadge.State? {
+        switch a.checkIn(now: now()) {
+        case .waiting: .waiting
+        case .overdue: .overdue
+        case .arrived, .none: nil
+        }
+    }
+
     public func card(for a: Appointment) -> EventCardModel {
         let primary = a.services.first.flatMap { reference.treatmentType($0.treatmentTypeID) }
         let title = a.kind == .blocker ? "Blockiert" : (a.patient?.listName ?? "Ohne Patient")
@@ -263,7 +288,8 @@ public final class CalendarModel {
             treatment: treatmentName(a), note: a.kind == .blocker ? nil : a.note, shortCode: primary?.shortCode,
             style: style(a), status: EventStatus(a.status), isSeries: a.seriesID != nil,
             room: a.kind == .blocker ? nil : roomName(a), isLastSession: a.isLastSession,
-            isPast: mode == .day && a.end <= now())
+            isPast: (mode == .day || mode == .week) && a.end <= now(),
+            checkIn: checkInState(a))
     }
 }
 
