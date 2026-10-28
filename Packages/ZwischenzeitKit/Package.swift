@@ -31,7 +31,7 @@ let package = Package(
         // Renders the component gallery to PNG on macOS (no simulator needed).
         .executableTarget(name: "DesignGallery", dependencies: ["DesignSystem"]),
         .testTarget(name: "DomainTests", dependencies: ["Domain", "MockAPI"]),
-        .testTarget(name: "CalendarFeatureTests", dependencies: ["CalendarFeature", "Domain"]),
+        .testTarget(name: "CalendarFeatureTests", dependencies: ["CalendarFeature", "Domain", "MockAPI"]),
         .testTarget(name: "DocumentationFeatureTests", dependencies: ["DocumentationFeature", "Domain", "MockAPI"]),
         .testTarget(name: "WatchSyncTests", dependencies: ["WatchSync", "Domain"]),
         .testTarget(name: "LiveAPITests", dependencies: ["LiveAPI", "Domain"], resources: [.copy("Fixtures")]),

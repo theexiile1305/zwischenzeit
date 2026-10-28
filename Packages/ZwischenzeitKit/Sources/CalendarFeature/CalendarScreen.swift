@@ -45,6 +45,7 @@ public struct CalendarScreen: View {
         }
         .background(DS.Color.bg)
         .task { if model.state == .idle { model.reload() } }
+        .onChange(of: sizeClass, initial: true) { model.weekDayLimit = sizeClass == .compact ? 3 : nil }
         .sheet(isPresented: $showDatePicker) { datePickerSheet }
         .sensoryFeedback(.selection, trigger: model.anchor)
     }

@@ -27,6 +27,8 @@ public final class CalendarModel {
     public private(set) var anchor: Date { didSet { updateVisibleHours() } }
     public var showWeekend = false { didSet { if showWeekend != oldValue { updateVisibleHours(); reload() } } }
     public var minuteHeight: CGFloat = DS.Layout.minuteHeightDefault
+    /// Compact width (iPhone): the week view shows this many consecutive days instead of the whole week.
+    public var weekDayLimit: Int? { didSet { if weekDayLimit != oldValue { updateVisibleHours(); reloadIfNeeded() } } }
     public var employeeID: EmployeeID { didSet { if employeeID != oldValue { reload() } } }
 
     public private(set) var appointments: [Appointment] = [] { didSet { updateVisibleHours() } }
@@ -80,6 +82,7 @@ public final class CalendarModel {
         case .agenda, .day:
             return [anchor]
         case .week:
+            if let limit = weekDayLimit { return windowDays(count: limit) }
             return cal.days(from: cal.startOfWeek(anchor), count: showWeekend ? 7 : 5)
         case .month:
             let month = cal.calendar.dateInterval(of: .month, for: anchor)!
@@ -89,6 +92,28 @@ public final class CalendarModel {
             let count = cal.calendar.dateComponents([.day], from: first, to: last).day!
             return cal.days(from: first, count: count).filter { showWeekend || !cal.isWeekend($0) }
         }
+    }
+
+    /// `count` consecutive visible days starting at the anchor (or the next visible day).
+    func windowDays(count: Int) -> [Date] {
+        var result: [Date] = []
+        var day = anchor
+        while result.count < count {
+            if showWeekend || !PracticeCalendar.isWeekend(day) { result.append(day) }
+            day = PracticeCalendar.calendar.date(byAdding: .day, value: 1, to: day)!
+        }
+        return result
+    }
+
+    /// Moves `anchor` by `count` visible days (weekends skipped unless shown).
+    private func shiftVisible(_ count: Int, direction: Int) {
+        var day = anchor
+        var left = count
+        while left > 0 {
+            day = PracticeCalendar.calendar.date(byAdding: .day, value: direction, to: day)!
+            if showWeekend || !PracticeCalendar.isWeekend(day) { left -= 1 }
+        }
+        anchor = day
     }
 
     /// Agenda and day load the whole strip week, so the strip's dots are right and
@@ -173,7 +198,9 @@ public final class CalendarModel {
             var next = cal.date(byAdding: .day, value: direction, to: anchor)!
             while !showWeekend && PracticeCalendar.isWeekend(next) { next = cal.date(byAdding: .day, value: direction, to: next)! }
             anchor = next
-        case .week: anchor = cal.date(byAdding: .weekOfYear, value: direction, to: anchor)!
+        case .week:
+            if let limit = weekDayLimit { shiftVisible(limit, direction: direction) }
+            else { anchor = cal.date(byAdding: .weekOfYear, value: direction, to: anchor)! }
         case .month: anchor = cal.date(byAdding: .month, value: direction, to: anchor)!
         }
         reloadIfNeeded()
