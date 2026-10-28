@@ -58,11 +58,11 @@ struct NextAppointmentWidgetView: View {
         Group {
             switch entry.state {
             case .disabled:
-                Image(systemName: "applewatch.slash").accessibilityLabel("Termin-Anzeige ist aus")
+                status("Aus", "applewatch.slash", label: "Termin-Anzeige ist aus")
             case .neverSynced:
-                Image(systemName: "arrow.triangle.2.circlepath").accessibilityLabel("Noch kein Abgleich mit dem iPhone")
+                status("Kein Abgleich", "arrow.triangle.2.circlepath", label: "Noch kein Abgleich mit dem iPhone")
             case .locked:
-                Image(systemName: "lock.fill").accessibilityLabel("Uhr entsperren, um Termine zu sehen")
+                status("Entsperren", "lock.fill", label: "Uhr entsperren, um Termine zu sehen")
             case .enabled:
                 if let item = entry.next {
                     content(item)
@@ -72,6 +72,16 @@ struct NextAppointmentWidgetView: View {
             }
         }
         .containerBackground(.fill.tertiary, for: .widget)
+    }
+
+    /// Icon only where there is no room for text (circular, corner); elsewhere the icon carries a short caption.
+    @ViewBuilder private func status(_ text: LocalizedStringKey, _ systemImage: String, label: LocalizedStringKey) -> some View {
+        switch family {
+        case .accessoryCircular, .accessoryCorner:
+            Image(systemName: systemImage).accessibilityLabel(label)
+        default:
+            Label(text, systemImage: systemImage).accessibilityLabel(label)
+        }
     }
 
     @ViewBuilder private func content(_ item: UpcomingItem) -> some View {
@@ -104,16 +114,16 @@ struct NextAppointmentWidgetView: View {
                         if item.start > entry.date {
                             Text(item.start, style: .relative)
                         } else {
-                            Text("noch ") + Text(timerInterval: entry.date...max(item.end, entry.date), countsDown: true)
+                            Text("noch \(Text(timerInterval: entry.date...max(item.end, entry.date), countsDown: true))")
                         }
                     }
                     .foregroundStyle(.secondary)
                 }
                 .font(.headline)
-                Text(item.title).font(.body).lineLimit(1).privacySensitive()
+                Text(item.title).font(.body).lineLimit(1).minimumScaleFactor(0.8).privacySensitive()
                 let details = [item.subtitle, item.room, item.session].compactMap { $0 }
                 if !details.isEmpty {
-                    Text(details.joined(separator: " · ")).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                    Text(details.joined(separator: " · ")).font(.caption).foregroundStyle(.secondary).lineLimit(1).minimumScaleFactor(0.8)
                         .privacySensitive()
                 }
             }
