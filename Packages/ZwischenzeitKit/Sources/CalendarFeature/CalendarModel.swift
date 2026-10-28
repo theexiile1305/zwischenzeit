@@ -23,13 +23,24 @@ public enum LoadState: Equatable, Sendable {
 /// State and loading for the calendar screens (agenda, day, week, month).
 @MainActor @Observable
 public final class CalendarModel {
-    public var mode: CalendarMode = .week { didSet { if mode != oldValue { reloadIfNeeded() } } }
-    public private(set) var anchor: Date
-    public var showWeekend = false { didSet { if showWeekend != oldValue { reload() } } }
+    public var mode: CalendarMode = .week { didSet { if mode != oldValue { updateVisibleHours(); reloadIfNeeded() } } }
+    public private(set) var anchor: Date {
+        didSet {
+            navigationDirection = anchor >= oldValue ? 1 : -1
+            updateVisibleHours()
+        }
+    }
+    public var showWeekend = false { didSet { if showWeekend != oldValue { updateVisibleHours(); reload() } } }
     public var minuteHeight: CGFloat = DS.Layout.minuteHeightDefault
+    /// Compact width (iPhone): the week view shows this many consecutive days instead of the whole week.
+    public var weekDayLimit: Int? { didSet { if weekDayLimit != oldValue { updateVisibleHours(); reloadIfNeeded() } } }
     public var employeeID: EmployeeID { didSet { if employeeID != oldValue { reload() } } }
 
-    public private(set) var appointments: [Appointment] = []
+    public private(set) var appointments: [Appointment] = [] { didSet { indexAppointments(); updateVisibleHours() } }
+    /// `appointments` split by practice-calendar day, so the grid and month do not filter the full list per cell.
+    private var appointmentsByDay: [Date: [Appointment]] = [:]
+    /// +1 when the last navigation went forward in time, -1 backward. Drives the page transition.
+    public private(set) var navigationDirection = 1
     public private(set) var blocked: [BlockedInterval] = []
     public private(set) var state: LoadState = .idle
     /// The range `appointments` and `blocked` currently hold.
@@ -43,8 +54,27 @@ public final class CalendarModel {
     let now: () -> Date
     private var loadTask: Task<Void, Never>?
 
-    public let dayStartHour = Int(DS.Layout.dayStartHour)
-    public let dayEndHour = Int(DS.Layout.dayEndHour)
+    /// The grid's hour window: the practice default, widened so early or late
+    /// appointments of the visible days are never clipped.
+    public private(set) var dayStartHour = Int(DS.Layout.dayStartHour)
+    public private(set) var dayEndHour = Int(DS.Layout.dayEndHour)
+
+    private func updateVisibleHours() {
+        let newDays = computeDays()
+        if newDays != days { days = newDays }
+        var lo = Int(DS.Layout.dayStartHour), hi = Int(DS.Layout.dayEndHour)
+        if mode == .day || mode == .week {
+            let cal = PracticeCalendar.self
+            let first = days.first, last = days.last.map { cal.calendar.date(byAdding: .day, value: 1, to: $0)! }
+            for a in appointments where a.start >= (first ?? .distantFuture) && a.start < (last ?? .distantPast) {
+                lo = min(lo, cal.minuteOfDay(a.start) / 60)
+                // An end on the next day (or at midnight) means the window runs to 24.
+                hi = cal.calendar.isDate(a.end, inSameDayAs: a.start) ? max(hi, (cal.minuteOfDay(a.end) + 59) / 60) : 24
+            }
+        }
+        if lo != dayStartHour { dayStartHour = lo }
+        if hi != dayEndHour { dayEndHour = hi }
+    }
 
     public init(api: any TToolsAPI, employeeID: EmployeeID, reference: ReferenceData, now: @escaping () -> Date = { .now }) {
         self.api = api
@@ -52,17 +82,26 @@ public final class CalendarModel {
         self.reference = reference
         self.now = now
         self.anchor = PracticeCalendar.startOfDay(now())
+        updateVisibleHours()
+    }
+
+    private func indexAppointments() {
+        appointmentsByDay = Dictionary(grouping: appointments) { PracticeCalendar.startOfDay($0.start) }
     }
 
     // MARK: Period
 
-    /// Days shown as columns (week/day) or the month's visible weekdays.
-    public var days: [Date] {
+    /// Days shown as columns (week/day) or the month's visible weekdays. Cached: rebuilt when
+    /// the anchor, mode, weekend toggle or day limit changes.
+    public private(set) var days: [Date] = []
+
+    private func computeDays() -> [Date] {
         let cal = PracticeCalendar.self
         switch mode {
         case .agenda, .day:
             return [anchor]
         case .week:
+            if let limit = weekDayLimit { return windowDays(count: limit) }
             return cal.days(from: cal.startOfWeek(anchor), count: showWeekend ? 7 : 5)
         case .month:
             let month = cal.calendar.dateInterval(of: .month, for: anchor)!
@@ -72,6 +111,28 @@ public final class CalendarModel {
             let count = cal.calendar.dateComponents([.day], from: first, to: last).day!
             return cal.days(from: first, count: count).filter { showWeekend || !cal.isWeekend($0) }
         }
+    }
+
+    /// `count` consecutive visible days starting at the anchor (or the next visible day).
+    func windowDays(count: Int) -> [Date] {
+        var result: [Date] = []
+        var day = anchor
+        while result.count < count {
+            if showWeekend || !PracticeCalendar.isWeekend(day) { result.append(day) }
+            day = PracticeCalendar.calendar.date(byAdding: .day, value: 1, to: day)!
+        }
+        return result
+    }
+
+    /// Moves `anchor` by `count` visible days (weekends skipped unless shown).
+    private func shiftVisible(_ count: Int, direction: Int) {
+        var day = anchor
+        var left = count
+        while left > 0 {
+            day = PracticeCalendar.calendar.date(byAdding: .day, value: direction, to: day)!
+            if showWeekend || !PracticeCalendar.isWeekend(day) { left -= 1 }
+        }
+        anchor = day
     }
 
     /// Agenda and day load the whole strip week, so the strip's dots are right and
@@ -156,7 +217,9 @@ public final class CalendarModel {
             var next = cal.date(byAdding: .day, value: direction, to: anchor)!
             while !showWeekend && PracticeCalendar.isWeekend(next) { next = cal.date(byAdding: .day, value: direction, to: next)! }
             anchor = next
-        case .week: anchor = cal.date(byAdding: .weekOfYear, value: direction, to: anchor)!
+        case .week:
+            if let limit = weekDayLimit { shiftVisible(limit, direction: direction) }
+            else { anchor = cal.date(byAdding: .weekOfYear, value: direction, to: anchor)! }
         case .month: anchor = cal.date(byAdding: .month, value: direction, to: anchor)!
         }
         reloadIfNeeded()
@@ -220,13 +283,19 @@ public final class CalendarModel {
     }
 
     public func appointments(on day: Date) -> [Appointment] {
-        appointments.filter { PracticeCalendar.calendar.isDate($0.start, inSameDayAs: day) }
+        appointmentsByDay[PracticeCalendar.startOfDay(day)] ?? []
+    }
+
+    /// Minutes the practice is open for this employee on `day` (default window minus blocked time),
+    /// the denominator for the month's load. Falls back to 8 h when nothing is bookable.
+    public func openMinutes(on day: Date) -> Int {
+        let open = DayLayout.openMinutes(blocked: blocked, on: day, startHour: Int(DS.Layout.dayStartHour), endHour: Int(DS.Layout.dayEndHour))
+        return open > 0 ? open : 8 * 60
     }
 
     /// Strip dot: at least one treatment that is not cancelled.
     public func hasAppointments(on day: Date) -> Bool {
-        appointments.contains { $0.kind == .treatment && $0.status != .cancelled
-            && PracticeCalendar.calendar.isDate($0.start, inSameDayAs: day) }
+        appointments(on: day).contains { $0.kind == .treatment && $0.status != .cancelled }
     }
 
     // MARK: Agenda
@@ -255,6 +324,14 @@ public final class CalendarModel {
 
     // MARK: Cards
 
+    private func checkInState(_ a: Appointment) -> DSCheckInBadge.State? {
+        switch a.checkIn(now: now()) {
+        case .waiting: .waiting
+        case .overdue: .overdue
+        case .arrived, .none: nil
+        }
+    }
+
     public func card(for a: Appointment) -> EventCardModel {
         let primary = a.services.first.flatMap { reference.treatmentType($0.treatmentTypeID) }
         let title = a.kind == .blocker ? "Blockiert" : (a.patient?.listName ?? "Ohne Patient")
@@ -263,7 +340,8 @@ public final class CalendarModel {
             treatment: treatmentName(a), note: a.kind == .blocker ? nil : a.note, shortCode: primary?.shortCode,
             style: style(a), status: EventStatus(a.status), isSeries: a.seriesID != nil,
             room: a.kind == .blocker ? nil : roomName(a), isLastSession: a.isLastSession,
-            isPast: mode == .day && a.end <= now())
+            isPast: (mode == .day || mode == .week) && a.end <= now(),
+            checkIn: checkInState(a))
     }
 }
 

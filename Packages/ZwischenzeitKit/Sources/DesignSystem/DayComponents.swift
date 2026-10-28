@@ -11,6 +11,7 @@ public struct DSDayPill: View {
     let hasAppointments: Bool
     let accessibilityText: String
     let action: () -> Void
+    @ScaledMetric(relativeTo: .body) private var minHeight: CGFloat = 56
 
     public init(weekday: String, day: String, isSelected: Bool, isToday: Bool, hasAppointments: Bool,
                 accessibilityText: String, action: @escaping () -> Void) {
@@ -44,7 +45,7 @@ public struct DSDayPill: View {
                     .frame(width: 5, height: 5)
                     .opacity(hasAppointments ? 1 : 0)
             }
-            .frame(maxWidth: .infinity, minHeight: 56)
+            .frame(maxWidth: .infinity, minHeight: minHeight)
             .background(RoundedRectangle(cornerRadius: DS.Radius.md).fill(isSelected ? DS.Color.accent : .clear))
             .overlay {
                 if isToday && !isSelected {
@@ -54,7 +55,7 @@ public struct DSDayPill: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(PressScaleStyle())
-        .dynamicTypeSize(...DynamicTypeSize.xxLarge)
+        .dynamicTypeSize(...DynamicTypeSize.accessibility1)
         .accessibilityLabel(accessibilityText)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }

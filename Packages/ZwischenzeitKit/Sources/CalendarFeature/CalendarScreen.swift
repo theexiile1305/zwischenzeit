@@ -9,6 +9,8 @@ public struct CalendarScreen: View {
     let onSettings: (() -> Void)?
 
     @Environment(\.horizontalSizeClass) private var sizeClass
+    @Environment(\.dynamicTypeSize) private var typeSize
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var showDatePicker = false
     @State private var showZoom = false
 
@@ -33,20 +35,34 @@ public struct CalendarScreen: View {
                 .padding(.horizontal, DS.Space.s8)
                 .padding(.vertical, DS.Space.s4)
             }
+            // One page per period: a new anchor replaces the page and it slides in from the side we moved towards.
             content
+                .id(model.anchor)
+                .transition(pageTransition)
+                .mask { Rectangle().ignoresSafeArea(edges: .bottom) } // clips the slide, not the home-indicator area
                 .simultaneousGesture(
-                    DragGesture(minimumDistance: 40)
+                    DragGesture(minimumDistance: 30)
                         .onEnded { value in
                             let dx = value.translation.width, dy = value.translation.height
-                            guard abs(dx) > 80, abs(dx) > abs(dy) * 2 else { return }
+                            guard abs(dx) > 50, abs(dx) > abs(dy) else { return }
                             model.step(dx < 0 ? 1 : -1)
                         }
                 )
+                .accessibilityAction(named: "Vorheriger Zeitraum") { model.step(-1) }
+                .accessibilityAction(named: "Nächster Zeitraum") { model.step(1) }
         }
         .background(DS.Color.bg)
         .task { if model.state == .idle { model.reload() } }
+        .onChange(of: sizeClass, initial: true) { model.weekDayLimit = sizeClass == .compact ? 3 : nil }
         .sheet(isPresented: $showDatePicker) { datePickerSheet }
+        .animation(reduceMotion ? nil : .snappy(duration: 0.28), value: model.anchor)
         .sensoryFeedback(.selection, trigger: model.anchor)
+    }
+
+    private var pageTransition: AnyTransition {
+        if reduceMotion { return .opacity }
+        let edge: Edge = model.navigationDirection >= 0 ? .trailing : .leading
+        return .asymmetric(insertion: .move(edge: edge).combined(with: .opacity), removal: .opacity)
     }
 
     @ViewBuilder private var content: some View {
@@ -69,8 +85,29 @@ public struct CalendarScreen: View {
     // MARK: Header
 
     private var header: some View {
-        HStack(alignment: .center, spacing: DS.Space.s4) {
-            Button { showDatePicker = true } label: {
+        Group {
+            if typeSize.isAccessibilitySize {
+                // Title gets its own line; the controls wrap below instead of squeezing it.
+                VStack(alignment: .leading, spacing: DS.Space.s4) {
+                    titleButton
+                    HStack(spacing: DS.Space.s4) { headerControls }
+                }
+            } else {
+                HStack(alignment: .center, spacing: DS.Space.s4) {
+                    titleButton
+                    Spacer(minLength: DS.Space.s4)
+                    headerControls
+                }
+            }
+        }
+        .padding(.leading, DS.Space.s16)
+        .padding(.trailing, DS.Space.s8)
+        .frame(minHeight: DS.Layout.toolbarHeight)
+        .background(DS.Color.bg)
+    }
+
+    private var titleButton: some View {
+        Button { showDatePicker = true } label: {
                 VStack(alignment: .leading, spacing: 0) {
                     HStack(spacing: DS.Space.s4) {
                         Text(model.headerTitle)
@@ -98,8 +135,9 @@ public struct CalendarScreen: View {
             .accessibilityLabel(model.accessibilityTitle)
             .accessibilityHint("Datum wählen")
             .accessibilityAddTraits(.isHeader)
+    }
 
-            Spacer(minLength: DS.Space.s4)
+    @ViewBuilder private var headerControls: some View {
 
             if model.state == .loading {
                 ProgressView().controlSize(.small).accessibilityLabel("Lädt")
@@ -155,11 +193,6 @@ public struct CalendarScreen: View {
                 }
                 .accessibilityLabel("Einstellungen")
             }
-        }
-        .padding(.leading, DS.Space.s16)
-        .padding(.trailing, DS.Space.s8)
-        .frame(minHeight: DS.Layout.toolbarHeight)
-        .background(DS.Color.bg)
     }
 
     private func plainIcon(_ label: LocalizedStringKey, _ systemImage: String, action: @escaping () -> Void) -> some View {

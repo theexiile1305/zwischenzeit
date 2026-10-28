@@ -44,22 +44,45 @@ public enum PracticeCalendar {
         calendar.isDateInWeekend(date)
     }
 
+    /// Formatters are costly to build and the grid formats per card, so they are
+    /// cached by template. `DateFormatter.string(from:)` is thread-safe; the lock
+    /// guards the dictionary.
+    private final class FormatterCache: @unchecked Sendable {
+        private let lock = NSLock()
+        private var formatters: [String: DateFormatter] = [:]
+
+        func formatter(for key: String, make: () -> DateFormatter) -> DateFormatter {
+            lock.lock()
+            defer { lock.unlock() }
+            if let cached = formatters[key] { return cached }
+            let made = make()
+            formatters[key] = made
+            return made
+        }
+    }
+
+    private static let cache = FormatterCache()
+
     public static func format(_ date: Date, _ template: String) -> String {
-        let f = DateFormatter()
-        f.calendar = calendar
-        f.timeZone = timeZone
-        f.locale = locale
-        f.setLocalizedDateFormatFromTemplate(template)
-        return f.string(from: date)
+        cache.formatter(for: "t:" + template) {
+            let f = DateFormatter()
+            f.calendar = calendar
+            f.timeZone = timeZone
+            f.locale = locale
+            f.setLocalizedDateFormatFromTemplate(template)
+            return f
+        }.string(from: date)
     }
 
     /// "09:40"
     public static func time(_ date: Date) -> String {
-        let f = DateFormatter()
-        f.calendar = calendar
-        f.timeZone = timeZone
-        f.locale = locale
-        f.dateFormat = "HH:mm"
-        return f.string(from: date)
+        cache.formatter(for: "f:HH:mm") {
+            let f = DateFormatter()
+            f.calendar = calendar
+            f.timeZone = timeZone
+            f.locale = locale
+            f.dateFormat = "HH:mm"
+            return f
+        }.string(from: date)
     }
 }
