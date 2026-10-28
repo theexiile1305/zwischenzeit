@@ -8,7 +8,12 @@ struct TimeGridView: View {
     let onOpen: (AppointmentID) -> Void
 
     @State private var didScrollToNow = false
+    /// Live pinch value; committed to the model on release so a pinch does not
+    /// invalidate every observer of `CalendarModel` on each frame.
+    @State private var pinchHeight: CGFloat?
     @State private var pinchBase: CGFloat?
+
+    private var minuteHeight: CGFloat { pinchHeight ?? model.minuteHeight }
 
     private var hours: [Int] { Array(model.dayStartHour...model.dayEndHour) }
     private var gridMinutes: Int { (model.dayEndHour - model.dayStartHour) * 60 }
@@ -24,12 +29,12 @@ struct TimeGridView: View {
                     HStack(alignment: .top, spacing: 0) {
                         timeColumn
                         ForEach(model.days, id: \.self) { day in
-                            DayColumn(model: model, day: day, onOpen: onOpen)
+                            DayColumn(model: model, day: day, minuteHeight: minuteHeight, onOpen: onOpen)
                                 .frame(maxWidth: .infinity)
                                 .overlay(alignment: .leading) { Rectangle().fill(DS.Color.gridLine).frame(width: 1) }
                         }
                     }
-                    .frame(height: CGFloat(gridMinutes) * model.minuteHeight)
+                    .frame(height: CGFloat(gridMinutes) * minuteHeight)
                     .padding(.top, DS.Space.s8)
                     .padding(.bottom, DS.Space.s48)
                 }
@@ -41,9 +46,13 @@ struct TimeGridView: View {
                     .onChanged { value in
                         let base = pinchBase ?? model.minuteHeight
                         pinchBase = base
-                        model.minuteHeight = min(max(base * value.magnification, DS.Layout.minuteHeightMin), DS.Layout.minuteHeightMax)
+                        pinchHeight = min(max(base * value.magnification, DS.Layout.minuteHeightMin), DS.Layout.minuteHeightMax)
                     }
-                    .onEnded { _ in pinchBase = nil }
+                    .onEnded { _ in
+                        if let pinchHeight { model.minuteHeight = pinchHeight }
+                        pinchHeight = nil
+                        pinchBase = nil
+                    }
             )
         }
         .background(DS.Color.bg)
@@ -96,16 +105,16 @@ struct TimeGridView: View {
                             .monospacedDigit()
                             .foregroundStyle(DS.Color.textMuted)
                             .padding(.trailing, DS.Space.s4)
-                            .offset(y: offset * model.minuteHeight - 7)
-                            .opacity(minute == 30 && model.minuteHeight < 1.2 ? 0 : 1)
+                            .offset(y: offset * minuteHeight - 7)
+                            .opacity(minute == 30 && minuteHeight < 1.2 ? 0 : 1)
                     }
                 }
-                Color.clear.frame(height: 1).offset(y: CGFloat((hour - model.dayStartHour) * 60) * model.minuteHeight).id(hour)
+                Color.clear.frame(height: 1).offset(y: CGFloat((hour - model.dayStartHour) * 60) * minuteHeight).id(hour)
             }
         }
         .frame(width: DS.Layout.timeColumnWidth)
         .overlay(alignment: .topTrailing) {
-            if model.days.contains(where: model.isToday) { NowPill(model: model) }
+            if model.days.contains(where: model.isToday) { NowPill(model: model, minuteHeight: minuteHeight) }
         }
         .accessibilityHidden(true)
     }
@@ -123,13 +132,14 @@ struct TimeGridView: View {
 private struct DayColumn: View {
     let model: CalendarModel
     let day: Date
+    let minuteHeight: CGFloat
     let onOpen: (AppointmentID) -> Void
 
     var body: some View {
         let appointments = model.appointments(on: day)
         let placed = DayLayout.place(appointments, dayStartHour: model.dayStartHour)
-        let byID = Dictionary(uniqueKeysWithValues: appointments.map { ($0.id, $0) })
-        let mh = model.minuteHeight
+        let byID = Dictionary(appointments.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let mh = minuteHeight
 
         GeometryReader { geo in
             ZStack(alignment: .topLeading) {
@@ -185,7 +195,7 @@ private struct DayColumn: View {
                     }
                 }
 
-                if model.isToday(day) { NowLine(model: model) }
+                if model.isToday(day) { NowLine(model: model, minuteHeight: minuteHeight) }
             }
         }
         .accessibilityElement(children: .contain)
@@ -223,6 +233,7 @@ private struct GridLines: View {
 
 private struct NowLine: View {
     let model: CalendarModel
+    let minuteHeight: CGFloat
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 60)) { _ in
@@ -232,7 +243,7 @@ private struct NowLine: View {
                     Circle().fill(DS.Color.nowLine).frame(width: 8, height: 8)
                     Rectangle().fill(DS.Color.nowLine).frame(height: 2)
                 }
-                .offset(x: -4, y: CGFloat(minute) * model.minuteHeight - 4)
+                .offset(x: -4, y: CGFloat(minute) * minuteHeight - 4)
                 .allowsHitTesting(false)
                 .accessibilityHidden(true)
             }
@@ -243,6 +254,7 @@ private struct NowLine: View {
 /// "09:28" on the time column, at the now line.
 private struct NowPill: View {
     let model: CalendarModel
+    let minuteHeight: CGFloat
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 60)) { _ in
@@ -256,7 +268,7 @@ private struct NowPill: View {
                     .padding(.horizontal, DS.Space.s4)
                     .padding(.vertical, 1)
                     .background(Capsule().fill(DS.Color.nowLine))
-                    .offset(y: CGFloat(minute) * model.minuteHeight - 8)
+                    .offset(y: CGFloat(minute) * minuteHeight - 8)
                     .allowsHitTesting(false)
             }
         }
