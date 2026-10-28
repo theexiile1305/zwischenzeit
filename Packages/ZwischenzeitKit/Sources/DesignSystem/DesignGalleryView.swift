@@ -78,7 +78,7 @@ public struct DesignGalleryView: View {
             section("Buttons") {
                 HStack(spacing: DS.Space.s8) {
                     DSButton("Anmelden") {}
-                    DSButton("Erneut", variant: .plain) {}
+                    DSButton("Erneut laden", variant: .plain) {}
                 }
             }
             section("Status, banners, empty") {

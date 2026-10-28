@@ -157,7 +157,7 @@ public struct CalendarScreen: View {
     @ViewBuilder private var headerControls: some View {
 
             if model.state == .loading {
-                ProgressView().controlSize(.small).accessibilityLabel("Lädt")
+                ProgressView().controlSize(.small).accessibilityLabel("Lädt …")
             }
 
             if !model.isShowingToday {
