@@ -143,7 +143,8 @@ public struct EventCard: View {
         }
         .foregroundStyle(model.style.foreground)
         .frame(minWidth: 0, maxWidth: .infinity, minHeight: DS.Layout.eventMinHeight, maxHeight: .infinity, alignment: .topLeading)
-        .background(model.style.fill)
+        // Past cards mute their colour; the text keeps full contrast (opacity would fade it too).
+        .background(model.style.fill.saturation(model.isPast && model.status != .cancelled ? 0.45 : 1))
         .overlay { if model.status == .cancelled { DSHatch().opacity(0.18) } }
         .overlay {
             // The patient is here and the slot is now: the one card to look at.
@@ -154,7 +155,6 @@ public struct EventCard: View {
             }
         }
         .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xs))
-        .opacity(model.isPast && model.status != .cancelled ? 0.6 : 1)
         .dynamicTypeSize(...DynamicTypeSize.accessibility1)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(model.accessibilityText)
@@ -201,7 +201,7 @@ public struct MonthChip: View {
             .foregroundStyle(style.foreground)
             .padding(.horizontal, DS.Space.s4)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(RoundedRectangle(cornerRadius: DS.Radius.xs).fill(style.fill))
+            .background(RoundedRectangle(cornerRadius: DS.Radius.xs).fill(style.fill).saturation(isCancelled ? 0.45 : 1))
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(isCancelled ? "\(time), \(treatment), abgesagt" : "\(time), \(treatment)")
     }

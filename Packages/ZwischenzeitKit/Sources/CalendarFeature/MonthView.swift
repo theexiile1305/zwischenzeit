@@ -92,7 +92,6 @@ struct MonthView: View {
                     ForEach(items.sorted { $0.start < $1.start }.prefix(maxChips), id: \.id) { a in
                         let card = model.card(for: a)
                         MonthChip(time: card.time, treatment: card.treatment, style: card.style, isCancelled: a.status == .cancelled)
-                            .opacity(a.status == .cancelled ? 0.5 : 1)
                     }
                     if items.count > maxChips {
                         Text("+\(items.count - maxChips) weitere")
@@ -125,7 +124,7 @@ struct MonthView: View {
         guard inMonth else { return DS.Color.surface }
         guard sizeClass != .regular, summary.treatments > 0 else { return DS.Color.bg }
         let fraction = loadFraction(summary, on: day)
-        return DS.Color.accent.opacity(0.02 + 0.08 * fraction)
+        return DS.Color.accent.opacity(0.05 + 0.15 * fraction)
     }
 
     /// Phone: the number of treatments, up to three category dots, and a bar for how full the day is.
