@@ -247,7 +247,7 @@ private struct AgendaRow: View {
     let isRunning: Bool
     let isNext: Bool
 
-    @ScaledMetric(relativeTo: .subheadline) private var timeColumn: CGFloat = 48
+    @ScaledMetric(relativeTo: .subheadline) private var timeColumn: CGFloat = DS.Layout.timeColumnWidth
 
     private var isBlocker: Bool { appointment.kind == .blocker }
     private var isCancelled: Bool { appointment.status == .cancelled }
@@ -262,10 +262,10 @@ private struct AgendaRow: View {
             .monospacedDigit()
             .frame(width: timeColumn, alignment: .trailing)
 
-            RoundedRectangle(cornerRadius: 2)
+            RoundedRectangle(cornerRadius: DS.Layout.edgeBarRadius)
                 .fill(model.style(appointment).edge)
                 .opacity(isDimmed ? 0.5 : 1)
-                .frame(width: 4)
+                .frame(width: DS.Layout.edgeBarWidth)
 
             VStack(alignment: .leading, spacing: DS.Space.s2) {
                 HStack(spacing: DS.Space.s4) {
@@ -313,7 +313,7 @@ private struct AgendaRow: View {
 private struct GapRow: View {
     let minutes: Int
     let start: Date
-    @ScaledMetric(relativeTo: .subheadline) private var timeColumn: CGFloat = 48
+    @ScaledMetric(relativeTo: .subheadline) private var timeColumn: CGFloat = DS.Layout.timeColumnWidth
 
     var body: some View {
         HStack(spacing: DS.Space.s12) {
@@ -321,7 +321,7 @@ private struct GapRow: View {
                 .font(.caption).monospacedDigit()
                 .foregroundStyle(DS.Color.textMuted)
                 .frame(width: timeColumn, alignment: .trailing)
-            Line().stroke(DS.Color.gridLineStrong, style: StrokeStyle(lineWidth: 1, dash: [3, 3])).frame(width: 4, height: 20)
+            Line().stroke(DS.Color.gridLineStrong, style: StrokeStyle(lineWidth: 1, dash: [3, 3])).frame(width: DS.Layout.edgeBarWidth, height: 20)
             Text("\(Countdown.duration(minutes: minutes)) frei")
                 .font(.footnote.weight(.medium))
                 .foregroundStyle(DS.Color.textMuted)

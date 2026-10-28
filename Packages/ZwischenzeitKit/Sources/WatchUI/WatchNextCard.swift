@@ -67,7 +67,7 @@ public struct WatchNextCard: View {
                         .foregroundStyle(DS.Color.accent)
                 }
                 HStack(alignment: .top, spacing: DS.Space.s8) {
-                    RoundedRectangle(cornerRadius: 2).fill(item.treatmentStyle.fill).frame(width: 4)
+                    RoundedRectangle(cornerRadius: DS.Layout.edgeBarRadius).fill(item.treatmentStyle.fill).frame(width: DS.Layout.edgeBarWidth)
                     VStack(alignment: .leading, spacing: DS.Space.s2) {
                         Text("\(PracticeCalendar.time(item.start))–\(PracticeCalendar.time(item.end))")
                             .font(.title3.weight(.semibold)).monospacedDigit()
