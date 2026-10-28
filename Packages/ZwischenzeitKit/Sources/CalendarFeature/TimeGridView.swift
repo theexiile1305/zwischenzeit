@@ -60,7 +60,7 @@ struct TimeGridView: View {
                                 .font(.subheadline.weight(.semibold))
                                 .foregroundStyle(DS.Color.onDanger)
                                 .padding(.horizontal, DS.Space.s12)
-                                .frame(minHeight: 36)
+                                .frame(minHeight: 44)
                                 .background(Capsule().fill(DS.Color.nowLine))
                                 .shadow(radius: 2, y: 1)
                         }

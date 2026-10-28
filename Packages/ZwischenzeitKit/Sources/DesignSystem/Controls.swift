@@ -48,6 +48,7 @@ public struct DSButton: View {
 public struct DSEmptyState: View {
     let title: LocalizedStringKey
     let systemImage: String
+    @ScaledMetric(relativeTo: .largeTitle) private var iconSize: CGFloat = 40
 
     public init(_ title: LocalizedStringKey = "Keine Termine", systemImage: String = "calendar.badge.checkmark") {
         self.title = title
@@ -56,7 +57,8 @@ public struct DSEmptyState: View {
 
     public var body: some View {
         VStack(spacing: DS.Space.s8) {
-            Image(systemName: systemImage).font(.system(size: 40)).foregroundStyle(DS.Color.textMuted)
+            Image(systemName: systemImage).font(.system(size: iconSize)).foregroundStyle(DS.Color.textMuted)
+                .accessibilityHidden(true)
             Text(title).font(.headline).foregroundStyle(DS.Color.textMuted)
         }
         .accessibilityElement(children: .combine)
