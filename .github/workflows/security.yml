@@ -40,7 +40,7 @@ jobs:
           tar -xzf gitleaks.tar.gz -C "$RUNNER_TEMP" gitleaks
           "$RUNNER_TEMP/gitleaks" git --no-banner --redact --exit-code 1 \
             --report-format sarif --report-path gitleaks.sarif .
-      - uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
+      - uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
         if: always() && hashFiles('gitleaks.sarif') != ''
         with:
           sarif_file: gitleaks.sarif
@@ -62,7 +62,7 @@ jobs:
           pipx run "semgrep==${SEMGREP_VERSION}" scan --metrics=off --error \
             --config p/swift --config p/secrets --config p/github-actions --config p/python \
             --sarif --output semgrep.sarif
-      - uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
+      - uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
         if: always() && hashFiles('semgrep.sarif') != ''
         with:
           sarif_file: semgrep.sarif
@@ -87,7 +87,7 @@ jobs:
           export PATH="$RUNNER_TEMP/mobsf/bin:$PATH"
           semgrep --version
           mobsfscan --config .mobsf --sarif --output mobsfscan.sarif App Packages/ZwischenzeitKit/Sources
-      - uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
+      - uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
         if: always() && hashFiles('mobsfscan.sarif') != ''
         with:
           sarif_file: mobsfscan.sarif
@@ -104,7 +104,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: zizmorcore/zizmor-action@85b2b9fb8e3325e7a23d7d0a9d7ba5ae0f999e3e # v0.7.1
+      - uses: zizmorcore/zizmor-action@53290badfa369cb0bf7ad16342cb62c2fa47ac7b # v0.8.0
 
   dependency-review:
     name: Dependency review
